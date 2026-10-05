@@ -11,10 +11,12 @@ body {
 
 #game {
     width: 90vw;
+    max-width: 1600px;
     aspect-ratio: 16 / 9;
     background-color: lightblue;
     position: relative;
     overflow: hidden;
+    touch-action: none;
 }
 
 #player {
@@ -24,4 +26,50 @@ body {
     position: absolute;
     left: 100px;
     top: 100px;
+}
+
+
+/* Touch buttons are hidden on laptop and desktop */
+
+#touch-controls {
+    display: none;
+}
+
+
+/* Touch buttons are shown on mobile */
+
+@media (max-width: 600px) {
+    #game {
+        width: 95vw;
+    }
+
+    #player {
+        width: 40px;
+        height: 40px;
+    }
+
+    #touch-controls {
+        position: absolute;
+        left: 50%;
+        bottom: 10px;
+        transform: translateX(-50%);
+        display: flex;
+        flex-direction: row;
+        gap: 10px;
+    }
+
+    #touch-controls button {
+        width: 65px;
+        height: 65px;
+        font-size: 28px;
+        border: none;
+        border-radius: 15px;
+        background-color: rgba(255, 255, 255, 0.7);
+        touch-action: none;
+        user-select: none;
+    }
+
+    #touch-controls button:active {
+        background-color: rgba(255, 255, 255, 0.9);
+    }
 }

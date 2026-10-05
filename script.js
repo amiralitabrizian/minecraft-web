@@ -1,33 +1,117 @@
 const player = document.getElementById("player");
 const game = document.getElementById("game");
 
+const leftButton = document.getElementById("left-button");
+const rightButton = document.getElementById("right-button");
+
 let playerX = 100;
+
 let movingLeft = false;
 let movingRight = false;
 
 const playerSpeed = 5;
 
-document.addEventListener("keydown", function(event) {
+
+// ====================
+// Device Detection
+// ====================
+
+const isTouchDevice =
+    "ontouchstart" in window ||
+    navigator.maxTouchPoints > 0;
+
+if (!isTouchDevice) {
+    leftButton.style.display = "none";
+    rightButton.style.display = "none";
+}
+
+
+// ====================
+// Keyboard Input
+// ====================
+
+function handleKeyboardInput(event, isPressed) {
     if (event.key === "a" || event.key === "A") {
-        movingLeft = true;
+        movingLeft = isPressed;
     }
 
     if (event.key === "d" || event.key === "D") {
-        movingRight = true;
+        movingRight = isPressed;
     }
+}
+
+document.addEventListener("keydown", function(event) {
+    handleKeyboardInput(event, true);
 });
 
 document.addEventListener("keyup", function(event) {
-    if (event.key === "a" || event.key === "A") {
+    handleKeyboardInput(event, false);
+});
+
+
+// ====================
+// Touch Input
+// ====================
+
+function startTouch(direction) {
+    if (direction === "left") {
+        movingLeft = true;
+    }
+
+    if (direction === "right") {
+        movingRight = true;
+    }
+}
+
+function stopTouch(direction) {
+    if (direction === "left") {
         movingLeft = false;
     }
 
-    if (event.key === "d" || event.key === "D") {
+    if (direction === "right") {
         movingRight = false;
     }
-});
+}
 
-function gameLoop() {
+if (isTouchDevice) {
+
+    leftButton.addEventListener("touchstart", function(event) {
+        event.preventDefault();
+        startTouch("left");
+    });
+
+    leftButton.addEventListener("touchend", function(event) {
+        event.preventDefault();
+        stopTouch("left");
+    });
+
+    leftButton.addEventListener("touchcancel", function() {
+        stopTouch("left");
+    });
+
+
+    rightButton.addEventListener("touchstart", function(event) {
+        event.preventDefault();
+        startTouch("right");
+    });
+
+    rightButton.addEventListener("touchend", function(event) {
+        event.preventDefault();
+        stopTouch("right");
+    });
+
+    rightButton.addEventListener("touchcancel", function() {
+        stopTouch("right");
+    });
+}
+
+
+// ====================
+// Player Movement
+// ====================
+
+function updatePlayerMovement() {
+
     if (movingLeft) {
         playerX -= playerSpeed;
     }
@@ -47,6 +131,15 @@ function gameLoop() {
     }
 
     player.style.left = playerX + "px";
+}
+
+
+// ====================
+// Game Loop
+// ====================
+
+function gameLoop() {
+    updatePlayerMovement();
 
     requestAnimationFrame(gameLoop);
 }
