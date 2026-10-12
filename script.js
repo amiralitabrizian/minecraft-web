@@ -1,147 +1,189 @@
+
+"use strict";
+
+// ==============================
+// Elements
+// ==============================
+
 const player = document.getElementById("player");
 const game = document.getElementById("game");
-
+const controls = document.getElementById("touch-controls");
 const leftButton = document.getElementById("left-button");
 const rightButton = document.getElementById("right-button");
 
-let playerX = 100;
+if (!player || !game || !controls || !leftButton || !rightButton) {
+    throw new Error("[INIT] Required game elements were not found.");
+}
 
-let movingLeft = false;
-let movingRight = false;
+// ==============================
+// State
+// ==============================
+
+let playerX = 100;
 
 const playerSpeed = 5;
 
+const input = {
+    leftKeyboard: false,
+    rightKeyboard: false,
+    leftTouch: false,
+    rightTouch: false
+};
 
-// ====================
-// Device Detection
-// ====================
-
-const isTouchDevice =
-    "ontouchstart" in window ||
-    navigator.maxTouchPoints > 0;
-
-if (!isTouchDevice) {
-    leftButton.style.display = "none";
-    rightButton.style.display = "none";
+function isMovingLeft() {
+    return input.leftKeyboard || input.leftTouch;
 }
 
-
-// ====================
-// Keyboard Input
-// ====================
-
-function handleKeyboardInput(event, isPressed) {
-    if (event.key === "a" || event.key === "A") {
-        movingLeft = isPressed;
-    }
-
-    if (event.key === "d" || event.key === "D") {
-        movingRight = isPressed;
-    }
+function isMovingRight() {
+    return input.rightKeyboard || input.rightTouch;
 }
 
-document.addEventListener("keydown", function(event) {
-    handleKeyboardInput(event, true);
+// ==============================
+// Device detection + debugging
+// ==============================
+
+function detectTouchDevice() {
+    return (
+        navigator.maxTouchPoints > 0 ||
+        "ontouchstart" in window ||
+        window.matchMedia("(pointer: coarse)").matches
+    );
+}
+
+function updateDeviceMode() {
+    const touchDevice = detectTouchDevice();
+
+    document.body.classList.toggle("touch-device", touchDevice);
+
+    console.log("[DEVICE]", {
+        touchDevice,
+        maxTouchPoints: navigator.maxTouchPoints,
+        width: window.innerWidth,
+        height: window.innerHeight,
+        orientation:
+            window.innerWidth > window.innerHeight
+                ? "landscape"
+                : "portrait",
+        controlsDisplay: getComputedStyle(controls).display
+    });
+}
+
+updateDeviceMode();
+
+window.addEventListener("resize", updateDeviceMode);
+window.addEventListener("orientationchange", function () {
+    setTimeout(updateDeviceMode, 100);
 });
 
-document.addEventListener("keyup", function(event) {
-    handleKeyboardInput(event, false);
+// ==============================
+// Keyboard input
+// ==============================
+
+function handleKeyDown(event) {
+    if (event.code === "KeyA") {
+        input.leftKeyboard = true;
+        console.log("[KEYBOARD] A physical key pressed");
+    }
+
+    if (event.code === "KeyD") {
+        input.rightKeyboard = true;
+        console.log("[KEYBOARD] D physical key pressed");
+    }
+}
+
+function handleKeyUp(event) {
+    if (event.code === "KeyA") {
+        input.leftKeyboard = false;
+        console.log("[KEYBOARD] A physical key released");
+    }
+
+    if (event.code === "KeyD") {
+        input.rightKeyboard = false;
+        console.log("[KEYBOARD] D physical key released");
+    }
+}
+
+document.addEventListener("keydown", handleKeyDown);
+document.addEventListener("keyup", handleKeyUp);
+
+window.addEventListener("blur", function () {
+    input.leftKeyboard = false;
+    input.rightKeyboard = false;
+    input.leftTouch = false;
+    input.rightTouch = false;
+
+    console.log("[INPUT] Reset after window lost focus");
 });
 
+// ==============================
+// Touch / pointer input
+// ==============================
 
-// ====================
-// Touch Input
-// ====================
+function connectMovementButton(button, direction) {
+    const stateKey =
+        direction === "left" ? "leftTouch" : "rightTouch";
 
-function startTouch(direction) {
-    if (direction === "left") {
-        movingLeft = true;
+    button.addEventListener("pointerdown", function (event) {
+        event.preventDefault();
+
+        input[stateKey] = true;
+
+        console.log("[POINTER DOWN]", {
+            direction,
+            pointerType: event.pointerType,
+            pointerId: event.pointerId
+        });
+
+        try {
+            button.setPointerCapture(event.pointerId);
+        } catch (error) {
+            console.warn("[POINTER] Capture unavailable", error);
+        }
+    });
+
+    function stopPointer(event) {
+        input[stateKey] = false;
+
+        console.log("[POINTER STOP]", {
+            direction,
+            eventType: event ? event.type : "unknown"
+        });
     }
 
-    if (direction === "right") {
-        movingRight = true;
-    }
+    button.addEventListener("pointerup", stopPointer);
+    button.addEventListener("pointercancel", stopPointer);
+    button.addEventListener("lostpointercapture", stopPointer);
+
+    console.log("[INPUT] Pointer handlers registered:", direction);
 }
 
-function stopTouch(direction) {
-    if (direction === "left") {
-        movingLeft = false;
-    }
+connectMovementButton(leftButton, "left");
+connectMovementButton(rightButton, "right");
 
-    if (direction === "right") {
-        movingRight = false;
-    }
-}
-
-if (isTouchDevice) {
-
-    leftButton.addEventListener("touchstart", function(event) {
-        event.preventDefault();
-        startTouch("left");
-    });
-
-    leftButton.addEventListener("touchend", function(event) {
-        event.preventDefault();
-        stopTouch("left");
-    });
-
-    leftButton.addEventListener("touchcancel", function() {
-        stopTouch("left");
-    });
-
-
-    rightButton.addEventListener("touchstart", function(event) {
-        event.preventDefault();
-        startTouch("right");
-    });
-
-    rightButton.addEventListener("touchend", function(event) {
-        event.preventDefault();
-        stopTouch("right");
-    });
-
-    rightButton.addEventListener("touchcancel", function() {
-        stopTouch("right");
-    });
-}
-
-
-// ====================
-// Player Movement
-// ====================
+// ==============================
+// Player movement
+// ==============================
 
 function updatePlayerMovement() {
-
-    if (movingLeft) {
+    if (isMovingLeft()) {
         playerX -= playerSpeed;
     }
 
-    if (movingRight) {
+    if (isMovingRight()) {
         playerX += playerSpeed;
     }
 
-    const maxX = game.clientWidth - player.offsetWidth;
+    const maxX = Math.max(0, game.clientWidth - player.offsetWidth);
 
-    if (playerX < 0) {
-        playerX = 0;
-    }
-
-    if (playerX > maxX) {
-        playerX = maxX;
-    }
+    playerX = Math.max(0, Math.min(playerX, maxX));
 
     player.style.left = playerX + "px";
 }
 
-
-// ====================
-// Game Loop
-// ====================
-
 function gameLoop() {
     updatePlayerMovement();
-
     requestAnimationFrame(gameLoop);
 }
 
+console.log("[INIT] Minecraft Web started successfully.");
 gameLoop();
