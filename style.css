@@ -130,30 +130,27 @@ body {
         height: 40px;
     }
 }
-
-/* DEBUG FIX: keep controls visible on screen */
+/* Mobile controls: visible only on touch devices */
 #touch-controls {
-    display: flex !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-    position: fixed !important;
-    z-index: 999999 !important;
-    left: auto !important;
-    right: 16px !important;
-    bottom: 16px !important;
-    top: auto !important;
-    transform: none !important;
-    flex-direction: row !important;
-    gap: 10px !important;
+    display: none;
+    position: fixed;
+    right: 16px;
+    bottom: max(16px, env(safe-area-inset-bottom));
+    z-index: 999999;
+    flex-direction: row;
+    gap: 12px;
+}
+
+body.touch-device #touch-controls {
+    display: flex;
 }
 
 #touch-controls button {
-    display: block !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-    width: 58px !important;
-    height: 58px !important;
-    min-width: 58px !important;
-    min-height: 58px !important;
-    flex-shrink: 0 !important;
+    width: 64px;
+    height: 64px;
+    min-width: 64px;
+    min-height: 64px;
+    flex-shrink: 0;
+    font-size: 28px;
+    touch-action: none;
 }
