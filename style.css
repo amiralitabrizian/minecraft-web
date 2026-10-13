@@ -5,152 +5,207 @@
 
 html,
 body {
-    margin: 0;
     width: 100%;
     height: 100%;
-    min-height: 100%;
+    margin: 0;
+    padding: 0;
     overflow: hidden;
-    background: #000;
 }
 
 body {
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    font-family: Arial, sans-serif;
+    background: #87ceeb;
+    overscroll-behavior: none;
 }
 
 #game {
     position: relative;
-    width: min(90vw, 1600px);
-    aspect-ratio: 16 / 9;
-    max-height: 96vh;
-    background: lightblue;
+    width: 100%;
+    height: 100%;
+    height: 100dvh;
     overflow: hidden;
+    background: linear-gradient(#78cafa, #d1f1ff);
     touch-action: none;
 }
 
 #player {
     position: absolute;
-    left: 100px;
-    top: 100px;
-    width: 50px;
-    height: 50px;
-    background: green;
+    left: 80px;
+    top: 0;
+    width: 40px;
+    height: 40px;
+    background: #008000;
+    z-index: 5;
+    pointer-events: none;
 }
 
-/* Touch controls */
+#ground {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    height: 22%;
+    min-height: 80px;
+    z-index: 2;
+    pointer-events: none;
+}
+
+.grass {
+    height: 16px;
+    background: #55b932;
+    border-top: 4px solid #7be34a;
+}
+
+.dirt {
+    height: calc(100% - 16px);
+    background-color: #89572f;
+    background-image: linear-gradient(
+        35deg,
+        transparent 45%,
+        rgba(0, 0, 0, 0.08) 46%,
+        transparent 55%
+    );
+    background-size: 30px 30px;
+}
+
+/* Controls are hidden on a normal desktop. */
 #touch-controls {
     display: none;
-    position: absolute;
-    z-index: 9999;
-    left: 50%;
-    bottom: 12px;
-    transform: translateX(-50%);
-    flex-direction: row;
+    position: fixed;
+    left: max(12px, env(safe-area-inset-left, 0px));
+    bottom: max(12px, env(safe-area-inset-bottom, 0px));
+    z-index: 100;
+
+    grid-template-columns: repeat(3, 54px);
+    grid-template-rows: repeat(2, 54px);
+    gap: 6px;
+
+    justify-items: center;
     align-items: center;
-    justify-content: center;
-    gap: 12px;
-}
 
-/* Touch-capable devices */
-@media (hover: none), (pointer: coarse) {
-    #touch-controls,
-    body.touch-device #touch-controls {
-        display: flex !important;
-    }
-}
-
-#touch-controls button {
-    display: block;
-    width: 64px;
-    height: 64px;
-    min-width: 64px;
-    min-height: 64px;
-    flex-shrink: 0;
-    padding: 0;
-    border: 2px solid #555;
-    border-radius: 14px;
-    background: rgba(255, 255, 255, 0.92);
-    color: #000;
-    font-size: 28px;
-    line-height: 1;
     touch-action: none;
     user-select: none;
     -webkit-user-select: none;
+}
+
+/* Jump centered above the movement buttons. */
+#jump-button {
+    grid-column: 2;
+    grid-row: 1;
+}
+
+#left-button {
+    grid-column: 1;
+    grid-row: 2;
+}
+
+#right-button {
+    grid-column: 3;
+    grid-row: 2;
+}
+
+#touch-controls button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 54px;
+    height: 54px;
+    padding: 0;
+
+    border: 2px solid #444;
+    border-radius: 12px;
+
+    background: rgba(255, 255, 255, 0.94);
+    color: #222;
+    font-size: 26px;
+    font-weight: bold;
+
+    box-shadow: 0 3px 0 rgba(0, 0, 0, 0.2);
+
+    touch-action: none;
     -webkit-tap-highlight-color: transparent;
 }
 
 #touch-controls button:active {
-    background: #fff;
+    background: #aee5ff;
+    transform: translateY(2px);
+}
+
+/* Show controls on touch devices. */
+body.touch-device #touch-controls {
+    display: grid;
+}
+
+@media (pointer: coarse), (hover: none) {
+    #touch-controls {
+        display: grid;
+    }
+}
+
+#help {
+    position: absolute;
+    top: max(10px, env(safe-area-inset-top, 0px));
+    left: 10px;
+    z-index: 10;
+
+    max-width: calc(100% - 20px);
+    padding: 8px 10px;
+
+    color: white;
+    background: rgba(0, 0, 0, 0.6);
+    border-radius: 6px;
+    font-size: 12px;
+
+    pointer-events: none;
+}
+
+#debug-status {
+    position: absolute;
+    top: 48px;
+    left: 10px;
+    z-index: 10;
+
+    padding: 5px 8px;
+    border-radius: 5px;
+
+    background: rgba(0, 0, 0, 0.55);
+    color: white;
+    font-size: 11px;
+
+    pointer-events: none;
 }
 
 @media (max-width: 600px) {
-    #game {
-        width: 95vw;
-    }
-
-    #player {
-        width: 40px;
-        height: 40px;
-    }
-}
-
-/* Landscape phone */
-@media screen and (orientation: landscape) and (max-height: 600px) {
-    body {
-        align-items: stretch;
-        justify-content: stretch;
-    }
-
-    #game {
-        width: 100%;
-        height: 100%;
-        max-height: none;
-        aspect-ratio: auto;
-    }
-
     #touch-controls {
-        left: auto;
-        right: max(16px, env(safe-area-inset-right, 0px));
-        bottom: max(16px, env(safe-area-inset-bottom, 0px));
-        transform: none;
-        gap: 10px;
+        grid-template-columns: repeat(3, 50px);
+        grid-template-rows: repeat(2, 50px);
+        gap: 6px;
     }
 
     #touch-controls button {
-        width: 58px;
-        height: 58px;
-        min-width: 58px;
-        min-height: 58px;
-        font-size: 25px;
-    }
-
-    #player {
-        width: 40px;
-        height: 40px;
+        width: 50px;
+        height: 50px;
+        font-size: 24px;
     }
 }
-/* Mobile controls: visible only on touch devices */
-#touch-controls {
-    display: none;
-    position: fixed;
-    right: 16px;
-    bottom: max(16px, env(safe-area-inset-bottom));
-    z-index: 999999;
-    flex-direction: row;
-    gap: 12px;
-}
 
-body.touch-device #touch-controls {
-    display: flex;
-}
+@media (orientation: landscape) and (max-height: 600px) {
+    #ground {
+        height: 24%;
+        min-height: 65px;
+    }
 
-#touch-controls button {
-    width: 64px;
-    height: 64px;
-    min-width: 64px;
-    min-height: 64px;
-    flex-shrink: 0;
-    font-size: 28px;
-    touch-action: none;
+    #touch-controls {
+        bottom: max(8px, env(safe-area-inset-bottom, 0px));
+        grid-template-columns: repeat(3, 46px);
+        grid-template-rows: repeat(2, 46px);
+        gap: 5px;
+    }
+
+    #touch-controls button {
+        width: 46px;
+        height: 46px;
+        font-size: 22px;
+    }
 }
