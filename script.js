@@ -5,13 +5,16 @@ const game = document.getElementById("game");
 const player = document.getElementById("player");
 const ground = document.getElementById("ground");
 const statusText = document.getElementById("debug-status");
+const rotateScreen = document.getElementById("rotate-screen");
 
 const leftButton = document.getElementById("left-button");
 const rightButton = document.getElementById("right-button");
 const jumpButton = document.getElementById("jump-button");
 
-if (!game || !player || !ground || !statusText ||
-    !leftButton || !rightButton || !jumpButton) {
+if (
+    !game || !player || !ground || !statusText ||
+    !rotateScreen || !leftButton || !rightButton || !jumpButton
+) {
     throw new Error("Game elements missing. Check index.html.");
 }
 
@@ -40,6 +43,31 @@ function setStatus(message) {
     statusText.textContent = message;
 }
 
+/* بررسی جهت گوشی و نمایش راهنما */
+function updateOrientationMode(touchDevice) {
+    if (typeof touchDevice !== "boolean") {
+        touchDevice = document.body.classList.contains("touch-device");
+    }
+
+    const portrait =
+        window.matchMedia("(orientation: portrait)").matches ||
+        window.innerHeight > window.innerWidth;
+
+    const needsLandscape = touchDevice && portrait;
+
+    document.body.classList.toggle("needs-landscape", needsLandscape);
+
+    if (needsLandscape) {
+        setStatus("برای شروع، گوشی را افقی کنید");
+        releaseInputs();
+    } else {
+        setStatus("بازی آماده است");
+    }
+
+    return needsLandscape;
+}
+
+/* پیدا کردن ارتفاع سطح زمین */
 function getFloorY() {
     const gameRect = game.getBoundingClientRect();
     const groundRect = ground.getBoundingClientRect();
@@ -64,7 +92,7 @@ function keepPlayerInsideWorld() {
     playerX = Math.max(0, Math.min(playerX, maxX));
 }
 
-/* Detect touch devices and show mobile controls. */
+/* شناسایی موبایل یا دستگاه لمسی */
 function updateDeviceMode() {
     const touchDevice =
         navigator.maxTouchPoints > 0 ||
@@ -74,28 +102,26 @@ function updateDeviceMode() {
 
     document.body.classList.toggle("touch-device", touchDevice);
 
+    updateOrientationMode(touchDevice);
+
     console.log("[DEVICE] Touch device:", touchDevice);
 }
 
+/* پرش */
 function requestJump(source) {
+    if (document.body.classList.contains("needs-landscape")) {
+        return;
+    }
+
     const floorY = getFloorY();
 
-    console.log("[JUMP REQUEST]", source, {
-        grounded: grounded,
-        playerY: playerY,
-        floorY: floorY
-    });
-
-    /*
-     * Permit jumping if grounded or very close to the floor.
-     */
     if (grounded || playerY >= floorY - 3) {
         playerY = floorY;
         velocityY = -JUMP_SPEED;
         grounded = false;
         jumpBuffer = 0;
 
-        setStatus("پرش! " + source);
+        setStatus("پرش!");
         console.log("[JUMP STARTED]", source);
     } else {
         jumpBuffer = 0.18;
@@ -103,25 +129,33 @@ function requestJump(source) {
     }
 }
 
-/* Keyboard: A/D, arrows, Space, and Up. */
+/* صفحه‌کلید: A/D یا کلیدهای جهت‌دار */
 window.addEventListener("keydown", function (event) {
     const key = event.key.toLowerCase();
 
-    if (event.code === "KeyA" || key === "a" ||
-        event.code === "ArrowLeft") {
+    if (
+        event.code === "KeyA" ||
+        key === "a" ||
+        event.code === "ArrowLeft"
+    ) {
         keys.left = true;
         event.preventDefault();
     }
 
-    if (event.code === "KeyD" || key === "d" ||
-        event.code === "ArrowRight") {
+    if (
+        event.code === "KeyD" ||
+        key === "d" ||
+        event.code === "ArrowRight"
+    ) {
         keys.right = true;
         event.preventDefault();
     }
 
-    if (event.code === "Space" ||
+    if (
+        event.code === "Space" ||
         event.code === "ArrowUp" ||
-        key === "w") {
+        key === "w"
+    ) {
         event.preventDefault();
 
         if (!event.repeat) {
@@ -133,17 +167,24 @@ window.addEventListener("keydown", function (event) {
 window.addEventListener("keyup", function (event) {
     const key = event.key.toLowerCase();
 
-    if (event.code === "KeyA" || key === "a" ||
-        event.code === "ArrowLeft") {
+    if (
+        event.code === "KeyA" ||
+        key === "a" ||
+        event.code === "ArrowLeft"
+    ) {
         keys.left = false;
     }
 
-    if (event.code === "KeyD" || key === "d" ||
-        event.code === "ArrowRight") {
+    if (
+        event.code === "KeyD" ||
+        key === "d" ||
+        event.code === "ArrowRight"
+    ) {
         keys.right = false;
     }
 });
 
+/* آزاد کردن تمام دکمه‌ها */
 function releaseInputs() {
     keys.left = false;
     keys.right = false;
@@ -159,12 +200,16 @@ document.addEventListener("visibilitychange", function () {
     }
 });
 
-/* Touch movement: multiple pointers are supported. */
+/* کنترل لمسی چپ و راست */
 function connectMovementButton(button, direction) {
     const activePointers = new Set();
     const touchKey = direction === "left" ? "left" : "right";
 
     button.addEventListener("pointerdown", function (event) {
+        if (document.body.classList.contains("needs-landscape")) {
+            return;
+        }
+
         event.preventDefault();
         activePointers.add(event.pointerId);
         touch[touchKey] = true;
@@ -187,13 +232,13 @@ function connectMovementButton(button, direction) {
 connectMovementButton(leftButton, "left");
 connectMovementButton(rightButton, "right");
 
-/* Touch jump */
+/* دکمه پرش */
 jumpButton.addEventListener("pointerdown", function (event) {
     event.preventDefault();
     requestJump("touch");
 });
 
-/* Physics */
+/* منطق حرکت مشترک برای کیبورد و لمس */
 function updateGame(dt) {
     let direction = 0;
 
@@ -212,6 +257,7 @@ function updateGame(dt) {
     velocityY += GRAVITY * dt;
     playerY += velocityY * dt;
 
+    /* برخورد با زمین */
     if (playerY >= floorY) {
         playerY = floorY;
         velocityY = 0;
@@ -225,6 +271,7 @@ function updateGame(dt) {
         grounded = false;
     }
 
+    /* جلوگیری از خارج شدن از بالای صفحه */
     if (playerY < 0) {
         playerY = 0;
 
@@ -236,6 +283,7 @@ function updateGame(dt) {
     renderPlayer();
 }
 
+/* تغییر اندازه صفحه یا چرخاندن گوشی */
 function handleResize() {
     updateDeviceMode();
     keepPlayerInsideWorld();
@@ -252,11 +300,19 @@ function handleResize() {
 }
 
 window.addEventListener("resize", handleResize);
+
 window.addEventListener("orientationchange", function () {
     requestAnimationFrame(handleResize);
 });
 
-/* Initialize */
+/* رویدادهای تغییر جهت در مرورگرهای جدید */
+if (screen.orientation) {
+    screen.orientation.addEventListener("change", function () {
+        requestAnimationFrame(handleResize);
+    });
+}
+
+/* راه‌اندازی بازی */
 updateDeviceMode();
 
 playerX = 80;
@@ -267,11 +323,11 @@ grounded = true;
 keepPlayerInsideWorld();
 renderPlayer();
 
-setStatus("بازی آماده است");
 console.log("[INIT] JavaScript loaded successfully.");
 
 let previousTime = 0;
 
+/* حلقه بازی */
 function gameLoop(timestamp) {
     if (previousTime === 0) {
         previousTime = timestamp;
@@ -280,7 +336,11 @@ function gameLoop(timestamp) {
     const dt = Math.min((timestamp - previousTime) / 1000, 0.033);
     previousTime = timestamp;
 
-    updateGame(dt);
+    /* در حالت عمودی بازی حرکت نمی‌کند */
+    if (!document.body.classList.contains("needs-landscape")) {
+        updateGame(dt);
+    }
+
     requestAnimationFrame(gameLoop);
 }
 

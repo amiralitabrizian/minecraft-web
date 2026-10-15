@@ -1,14 +1,35 @@
 
 <!DOCTYPE html>
-<html lang="fa">
+<html lang="fa" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <meta name="theme-color" content="#87ceeb">
+    <meta name="theme-color" content="#101827">
     <title>Minecraft Web</title>
-    <link rel="stylesheet" href="./style.css?v=4">
+    <link rel="stylesheet" href="./style.css?v=5">
 </head>
 <body>
+    <!-- راهنمای چرخاندن گوشی -->
+    <section id="rotate-screen" aria-live="polite">
+        <div class="rotate-content">
+            <div class="phone-animation" aria-hidden="true">
+                <div class="phone-frame">
+                    <div class="phone-screen">
+                        <div class="phone-sky"></div>
+                        <div class="phone-grass"></div>
+                    </div>
+                    <div class="phone-camera"></div>
+                </div>
+                <span class="rotate-arrow">↻</span>
+            </div>
+
+            <h1>گوشی را افقی کن!</h1>
+            <p>برای شروع بازی، گوشی را بچرخان و در حالت افقی نگه دار.</p>
+            <div class="rotate-hint">↔ حالت افقی</div>
+        </div>
+    </section>
+
+    <!-- بازی -->
     <main id="game">
         <div id="player"></div>
 
@@ -18,15 +39,15 @@
         </div>
 
         <div id="touch-controls">
-            <button id="jump-button" type="button" aria-label="Jump">↑</button>
-            <button id="left-button" type="button" aria-label="Move left">←</button>
-            <button id="right-button" type="button" aria-label="Move right">→</button>
+            <button id="jump-button" type="button" aria-label="پرش">↑</button>
+            <button id="left-button" type="button" aria-label="حرکت به چپ">←</button>
+            <button id="right-button" type="button" aria-label="حرکت به راست">→</button>
         </div>
 
         <div id="help">A / D: حرکت | Space / ↑: پرش</div>
         <div id="debug-status">در حال آماده‌سازی بازی...</div>
     </main>
 
-    <script src="./script.js?v=4"></script>
+    <script src="./script.js?v=5"></script>
 </body>
 </html>
