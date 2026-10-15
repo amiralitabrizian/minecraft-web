@@ -251,15 +251,17 @@ body.needs-landscape #game {
     grid-row: 1;
 }
 
+
 #left-button {
-    grid-column: 1;
+    grid-column: 3;
     grid-row: 2;
 }
 
 #right-button {
-    grid-column: 3;
+    grid-column: 1;
     grid-row: 2;
 }
+
 
 #touch-controls button {
     display: flex;
