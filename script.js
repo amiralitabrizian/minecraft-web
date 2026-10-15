@@ -31,7 +31,7 @@
   let worldReady = false;
   let dpr = 1;
   let breakState = null;
-  const BREAK_DURATION_MS = 3000;
+  const BREAK_DURATION_MS = 1500;
 
   const MOVE_SPEED = 260;
   const GRAVITY = 1500;
@@ -184,7 +184,7 @@
           selectedBlock = block;
           startBreaking(block);
         } else {
-          setStatus("برای شکستن، روی بلاک نزدیک کلیک چپ را ۳ ثانیه نگه دار");
+          setStatus("برای شکستن، روی بلاک نزدیک کلیک چپ را ۱٫۵ ثانیه نگه دار");
         }
       } else if (event.button === 2) {
         placeAtWorldPoint(pointerWorld);
@@ -231,7 +231,7 @@
     cancelBreaking(false);
     selectedBlock = target;
     breakState = { target, startedAt: performance.now(), timer: null };
-    setStatus("در حال شکستن… ۳ ثانیه نگه دار");
+    setStatus("در حال شکستن… ۱٫۵ ثانیه نگه دار");
     const state = breakState;
     state.timer = window.setTimeout(() => {
       if (breakState !== state) return;
@@ -245,7 +245,7 @@
     if (!breakState) return;
     window.clearTimeout(breakState.timer);
     breakState = null;
-    if (showMessage) setStatus("شکستن لغو شد؛ دکمه را ۳ ثانیه نگه دار");
+    if (showMessage) setStatus("شکستن لغو شد؛ دکمه را ۱٫۵ ثانیه نگه دار");
     render();
   }
 

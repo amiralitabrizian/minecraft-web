@@ -7,7 +7,7 @@
   <meta name="description" content="Minecraft Web — a small block-based browser game">
   <title>Minecraft Web</title>
   <link rel="manifest" href="./manifest.json">
-  <link rel="stylesheet" href="./style.css?v=9">
+  <link rel="stylesheet" href="./style.css?v=10">
 </head>
 <body>
   <section id="rotate-screen" aria-live="polite">
@@ -26,7 +26,7 @@
   <main id="game-shell">
     <canvas id="game-canvas" aria-label="محیط بازی"></canvas>
     <header id="top-hud">
-      <div id="help">لپ‌تاپ: A/D یا ←/→ حرکت، Space پرش، کلیک چپ ۳ث برای شکستن، کلیک راست برای قراردادن</div>
+      <div id="help">لپ‌تاپ: A/D یا ←/→ حرکت، Space پرش، کلیک چپ را ۱٫۵ ثانیه نگه دار: شکستن؛ کلیک راست: قراردادن</div>
       <div id="debug-status" role="status">در حال آماده‌سازی...</div>
     </header>
 
@@ -39,7 +39,7 @@
         <option value="wood">چوب</option>
         <option value="leaves">برگ</option>
       </select>
-      <button id="break-button" type="button">شکستن (۳ ثانیه)</button>
+      <button id="break-button" type="button">شکستن (۱٫۵ ثانیه)</button>
       <button id="place-button" type="button">قراردادن بلاک</button>
     </section>
 
@@ -50,13 +50,13 @@
       </div>
       <div class="action-controls">
         <button id="jump-button" type="button" aria-label="پرش">↑</button>
-        <button id="touch-break-button" type="button">شکستن ۳ث</button>
+        <button id="touch-break-button" type="button">شکستن ۱٫۵ث</button>
         <button id="touch-place-button" type="button">قراردادن</button>
       </div>
     </nav>
   </main>
-  <script src="./world.js?v=9"></script>
-  <script src="./script.js?v=9"></script>
+  <script src="./world.js?v=10"></script>
+  <script src="./script.js?v=10"></script>
   <script>
     if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
       window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(err => console.warn('Service worker registration failed:', err)));

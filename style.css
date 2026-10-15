@@ -89,3 +89,98 @@ body.needs-landscape #rotate-screen { display:flex; }
   #touch-controls .move-controls { order:1; }
   #touch-controls .action-controls { order:2; }
 }
+
+
+/* v10: explicit, stable control placement for laptop and mobile. */
+#touch-controls { direction:ltr; }
+#touch-controls .move-controls,
+#touch-controls .action-controls { direction:ltr; flex-direction:row; }
+#left-button { order:0; }
+#right-button { order:1; }
+#block-panel { direction:ltr; }
+#block-type { direction:rtl; }
+#touch-controls button { white-space:nowrap; }
+
+@media (pointer:coarse), (hover:none), (max-width:700px) {
+  #block-panel {
+    top:auto;
+    bottom:calc(68px + env(safe-area-inset-bottom, 0px));
+    right:10px;
+    left:auto;
+    transform:none;
+    z-index:25;
+    display:flex;
+    flex-wrap:nowrap;
+    max-width:min(180px, calc(100vw - 20px));
+    padding:4px;
+    gap:4px;
+    direction:rtl;
+  }
+  #block-panel label { display:none; }
+  #block-panel #break-button,
+  #block-panel #place-button { display:none; }
+  #block-type { display:block; width:140px; max-width:100%; min-height:34px; font-size:12px; padding:4px 6px; }
+
+  #touch-controls {
+    display:block !important;
+    position:absolute;
+    inset:auto 0 calc(8px + env(safe-area-inset-bottom, 0px)) 0;
+    height:58px;
+    z-index:30;
+    pointer-events:none;
+  }
+  #touch-controls .move-controls {
+    position:absolute;
+    left:10px;
+    right:auto;
+    bottom:0;
+    display:flex;
+    flex-direction:row !important;
+    gap:6px;
+    pointer-events:auto;
+  }
+  #touch-controls .action-controls {
+    position:absolute;
+    right:10px;
+    left:auto;
+    bottom:0;
+    display:flex;
+    flex-direction:row !important;
+    gap:5px;
+    pointer-events:auto;
+  }
+  #touch-controls button {
+    min-width:48px;
+    width:auto;
+    min-height:52px;
+    padding:5px 7px;
+    font-size:19px;
+    touch-action:none;
+    user-select:none;
+    -webkit-user-select:none;
+  }
+  #touch-break-button, #touch-place-button {
+    min-width:64px !important;
+    font-size:11px !important;
+    white-space:normal;
+    line-height:1.2;
+  }
+  #jump-button { min-width:46px; }
+  #help { max-width:58%; font-size:10px; }
+}
+
+@media (orientation:landscape) and (max-height:430px) {
+  #touch-controls { height:48px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); }
+  #touch-controls button { min-height:44px; min-width:42px; font-size:17px; padding:3px 5px; }
+  #touch-break-button, #touch-place-button { min-width:58px !important; font-size:10px !important; }
+  #block-panel { bottom:calc(54px + env(safe-area-inset-bottom, 0px)); }
+  #block-type { min-height:30px; width:126px; font-size:11px; }
+}
+
+@media (max-width:390px) {
+  #touch-controls .move-controls { left:5px; gap:4px; }
+  #touch-controls .action-controls { right:5px; gap:3px; }
+  #touch-controls button { min-width:42px; padding:3px 4px; font-size:17px; }
+  #touch-break-button, #touch-place-button { min-width:52px !important; font-size:10px !important; }
+  #block-panel { right:5px; }
+}
