@@ -8,12 +8,12 @@ button { cursor:pointer; touch-action:manipulation; }
 #top-hud { position:absolute; top:max(8px, env(safe-area-inset-top, 0px)); right:10px; left:10px; display:flex; align-items:flex-start; justify-content:space-between; gap:8px; pointer-events:none; }
 #help, #debug-status { color:#fff; background:rgba(0,0,0,.62); border:1px solid rgba(255,255,255,.18); border-radius:7px; padding:7px 10px; font-size:12px; line-height:1.6; text-shadow:0 1px 2px #000; }
 #debug-status { max-width:45%; text-align:center; }
-#block-panel { position:absolute; top:75px; right:10px; display:flex; align-items:center; flex-wrap:wrap; gap:6px; max-width:min(520px, calc(100% - 20px)); padding:8px; color:white; background:rgba(10,20,30,.72); border:1px solid rgba(255,255,255,.2); border-radius:9px; }
+#block-panel { position:absolute; top:auto; bottom:max(12px, env(safe-area-inset-bottom, 0px)); right:50%; transform:translateX(50%); display:flex; align-items:center; flex-wrap:wrap; gap:6px; max-width:min(520px, calc(100% - 20px)); padding:8px; color:white; background:rgba(10,20,30,.72); border:1px solid rgba(255,255,255,.2); border-radius:9px; }
 #block-panel label { font-size:12px; }
 #block-type, #block-panel button, #touch-controls button, #try-landscape { border:2px solid #354254; border-radius:8px; background:#f8fafc; color:#172033; min-height:38px; padding:6px 10px; font-weight:bold; }
 #block-panel button:active, #touch-controls button:active { background:#b9e7ff; transform:translateY(1px); }
 #touch-controls { display:none; position:absolute; inset:auto max(12px, env(safe-area-inset-right, 0px)) max(12px, env(safe-area-inset-bottom, 0px)) max(12px, env(safe-area-inset-left, 0px)); align-items:flex-end; justify-content:space-between; gap:12px; z-index:20; pointer-events:none; }
-#touch-controls .move-controls, #touch-controls .action-controls { display:flex; align-items:flex-end; gap:7px; pointer-events:auto; }
+#touch-controls .move-controls, #touch-controls .action-controls { display:flex; align-items:flex-end; gap:7px; pointer-events:auto; direction:ltr; }
 #touch-controls button { min-width:54px; min-height:54px; padding:7px; font-size:22px; box-shadow:0 3px 0 rgba(0,0,0,.25); -webkit-tap-highlight-color:transparent; }
 #touch-break-button, #touch-place-button { font-size:14px !important; min-width:70px !important; }
 body.touch-device #touch-controls { display:flex !important; }
@@ -21,13 +21,14 @@ body.touch-device #touch-controls button { touch-action:none; user-select:none; 
 body.touch-device #game-shell { -webkit-tap-highlight-color:transparent; }
 body.touch-device #block-panel { z-index:15; }
 body.touch-device #touch-controls { bottom:max(12px, env(safe-area-inset-bottom, 0px)); left:max(12px, env(safe-area-inset-left, 0px)); right:max(12px, env(safe-area-inset-right, 0px)); }
-body.touch-device #touch-controls .move-controls { flex-direction:row; }
-body.touch-device #touch-controls .action-controls { flex-direction:row; }
+body.touch-device #touch-controls .move-controls { flex-direction:row; direction:ltr; }
+body.touch-device #touch-controls .action-controls { flex-direction:row; direction:ltr; }
 body.touch-device #touch-controls button { min-width:52px; min-height:52px; }
 body.touch-device #touch-break-button, body.touch-device #touch-place-button { min-width:62px !important; font-size:12px !important; }
 body.touch-device #help { max-width:58%; font-size:10px; }
-body.touch-device #block-panel { top:64px; right:8px; padding:5px; gap:4px; }
+body.touch-device #block-panel { top:64px; bottom:auto; right:8px; left:auto; transform:none; padding:5px; gap:4px; }
 body.touch-device #block-panel label { display:none; }
+body.touch-device #block-panel #break-button, body.touch-device #block-panel #place-button { display:none; }
 body.touch-device #block-type, body.touch-device #block-panel button { min-height:32px; padding:4px 6px; font-size:11px; }
 body.needs-landscape #game-shell { visibility:hidden; pointer-events:none; }
 #rotate-screen { display:none; position:fixed; inset:0; z-index:1000; align-items:center; justify-content:center; padding:20px; overflow:hidden; background:radial-gradient(ellipse at top,#263d60 0%,transparent 60%),linear-gradient(145deg,#101827,#080d16); color:white; text-align:center; }
@@ -73,3 +74,18 @@ body.needs-landscape #rotate-screen { display:flex; }
   #touch-break-button, #touch-place-button { min-width:52px !important; font-size:10px !important; }
 }
 @media (prefers-reduced-motion:reduce) { .phone-frame,.rotate-arrow { animation-duration:5s; } }
+
+/* v9: keep control order stable on RTL pages and keep action buttons at the bottom. */
+#touch-controls { direction:ltr; }
+#touch-controls .move-controls { direction:ltr; }
+#touch-controls .action-controls { direction:ltr; }
+#block-panel { direction:ltr; }
+#block-panel label { direction:rtl; }
+#block-type { direction:rtl; }
+#touch-controls button { white-space:nowrap; }
+@media (max-width:700px) {
+  #block-panel { direction:rtl; }
+  #touch-controls { align-items:flex-end; }
+  #touch-controls .move-controls { order:1; }
+  #touch-controls .action-controls { order:2; }
+}

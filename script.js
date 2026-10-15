@@ -30,6 +30,8 @@
   let lastTime = 0;
   let worldReady = false;
   let dpr = 1;
+  let breakState = null;
+  const BREAK_DURATION_MS = 3000;
 
   const MOVE_SPEED = 260;
   const GRAVITY = 1500;
@@ -85,6 +87,7 @@
 
   function releaseInputs() {
     keys.left = keys.right = touch.left = touch.right = false;
+    cancelBreaking();
   }
 
   function keepPlayerInWorld() {
@@ -120,7 +123,7 @@
     if (code === "KeyA" || key === "a" || code === "ArrowLeft") { keys.left = true; event.preventDefault(); }
     if (code === "KeyD" || key === "d" || code === "ArrowRight") { keys.right = true; event.preventDefault(); }
     if (code === "Space" || code === "ArrowUp" || key === "w") { event.preventDefault(); if (!event.repeat) jump("keyboard"); }
-    if (!event.repeat && (key === "e" || code === "Backspace" || code === "Delete")) { event.preventDefault(); breakSelectedBlock(); }
+    if (!event.repeat && (key === "e" || code === "KeyE" || code === "Backspace" || code === "Delete")) { event.preventDefault(); startBreaking(hoveredBlock || selectedBlock); }
     if (!event.repeat && (key === "q" || code === "KeyQ")) { event.preventDefault(); placeBlockNearSelection(); }
   }
 
@@ -129,6 +132,7 @@
     const key = event.key.toLowerCase();
     if (code === "KeyA" || key === "a" || code === "ArrowLeft") keys.left = false;
     if (code === "KeyD" || key === "d" || code === "ArrowRight") keys.right = false;
+    if (key === "e" || code === "KeyE" || code === "Backspace" || code === "Delete") cancelBreaking();
   }
 
   function connectHoldButton(button, direction) {
@@ -163,7 +167,7 @@
     const block = blockAtPoint(pointerWorld);
     hoveredBlock = block && isInReach(block) ? block : null;
     // Keep the current target in sync for the touch action buttons too.
-    if (hoveredBlock) selectedBlock = hoveredBlock;
+    if (hoveredBlock && !breakState) selectedBlock = hoveredBlock;
     render();
   }
 
@@ -172,30 +176,25 @@
     pointerWorld = screenToWorld(event);
     const block = blockAtPoint(pointerWorld);
 
-    // Laptop/mouse controls: left-click breaks, right-click places next to the pointed block.
+    // Mouse: hold left button for 3 seconds to break; right-click places in one action.
     if (event.pointerType === "mouse") {
       event.preventDefault();
       if (event.button === 0) {
         if (block && isInReach(block)) {
           selectedBlock = block;
-          breakSelectedBlock();
+          startBreaking(block);
         } else {
-          setStatus("برای شکستن، روی یک بلاک نزدیک کلیک چپ کن");
+          setStatus("برای شکستن، روی بلاک نزدیک کلیک چپ را ۳ ثانیه نگه دار");
         }
       } else if (event.button === 2) {
-        if (block && isInReach(block)) {
-          selectedBlock = block;
-          placeBlockAtPointer(block, pointerWorld);
-        } else {
-          setStatus("برای قراردادن، روی کنار یک بلاک نزدیک کلیک راست کن");
-        }
+        placeAtWorldPoint(pointerWorld);
       }
       hoveredBlock = block && isInReach(block) ? block : null;
       render();
       return;
     }
 
-    // Touch: tap selects a block; the separate touch buttons break/place it.
+    // Touch: tap selects a target; the bottom action buttons break/place it.
     if (block && isInReach(block)) {
       selectedBlock = block;
       setStatus(block.type === "bedrock" ? "سنگ‌بستر قابل شکستن نیست" : `انتخاب شد: ${typeName(block.type)}`);
@@ -211,16 +210,62 @@
     return ({ grass: "چمن", dirt: "خاک", stone: "سنگ", wood: "چوب", leaves: "برگ", bedrock: "سنگ‌بستر" })[type] || type;
   }
 
-  function breakSelectedBlock() {
-    if (!selectedBlock || !world.blocks.includes(selectedBlock)) { setStatus("اول یک بلاک را انتخاب کن"); return; }
-    if (selectedBlock.type === "bedrock") { setStatus("سنگ‌بستر قابل شکستن نیست"); return; }
-    if (!isInReach(selectedBlock)) { setStatus("بلاک خارج از دسترس است"); return; }
-    const name = typeName(selectedBlock.type);
-    world.removeBlock(selectedBlock);
-    selectedBlock = null;
-    if (hoveredBlock && !world.blocks.includes(hoveredBlock)) hoveredBlock = null;
+  function breakSelectedBlock(target = selectedBlock) {
+    if (!target || !world.blocks.includes(target)) { setStatus("اول یک بلاک را انتخاب کن"); return false; }
+    if (target.type === "bedrock") { setStatus("سنگ‌بستر قابل شکستن نیست"); return false; }
+    if (!isInReach(target)) { setStatus("بلاک خارج از دسترس است"); return false; }
+    const name = typeName(target.type);
+    world.removeBlock(target);
+    if (selectedBlock === target) selectedBlock = null;
+    if (hoveredBlock === target) hoveredBlock = null;
+    breakState = null;
     setStatus(`${name} شکسته شد`);
     render();
+    return true;
+  }
+
+  function startBreaking(target = hoveredBlock || selectedBlock) {
+    if (!target || !world.blocks.includes(target)) { setStatus("اول روی یک بلاک نزدیک برو یا آن را انتخاب کن"); return; }
+    if (target.type === "bedrock") { setStatus("سنگ‌بستر قابل شکستن نیست"); return; }
+    if (!isInReach(target)) { setStatus("بلاک خارج از دسترس است"); return; }
+    cancelBreaking(false);
+    selectedBlock = target;
+    breakState = { target, startedAt: performance.now(), timer: null };
+    setStatus("در حال شکستن… ۳ ثانیه نگه دار");
+    const state = breakState;
+    state.timer = window.setTimeout(() => {
+      if (breakState !== state) return;
+      breakState = null;
+      breakSelectedBlock(target);
+    }, BREAK_DURATION_MS);
+    render();
+  }
+
+  function cancelBreaking(showMessage = false) {
+    if (!breakState) return;
+    window.clearTimeout(breakState.timer);
+    breakState = null;
+    if (showMessage) setStatus("شکستن لغو شد؛ دکمه را ۳ ثانیه نگه دار");
+    render();
+  }
+
+  function connectBreakHold(button) {
+    if (!button) return;
+    button.addEventListener("pointerdown", event => {
+      event.preventDefault();
+      const target = hoveredBlock || selectedBlock;
+      startBreaking(target);
+      try { button.setPointerCapture(event.pointerId); } catch (_) {}
+    });
+    const stop = () => {
+      if (breakState) {
+        const elapsed = performance.now() - breakState.startedAt;
+        if (elapsed < BREAK_DURATION_MS) cancelBreaking(true);
+      }
+    };
+    button.addEventListener("pointerup", stop);
+    button.addEventListener("pointercancel", stop);
+    button.addEventListener("lostpointercapture", stop);
   }
 
   function placeBlockAtPointer(block, point) {
@@ -256,11 +301,41 @@
     render();
   }
 
+  function placeAtWorldPoint(point) {
+    if (!point) { setStatus("روی محل موردنظر کلیک یا لمس کن"); return; }
+    const gx = Math.floor(point.x / BLOCK_SIZE) * BLOCK_SIZE;
+    const gy = Math.floor(point.y / BLOCK_SIZE) * BLOCK_SIZE;
+    const occupied = world.getAt(gx, gy);
+
+    // If the pointer is over a block, place on the nearest face. If it is over an empty
+    // cell, place directly in that cell when it touches an existing block.
+    if (occupied) {
+      if (!isInReach(occupied)) { setStatus("این بلاک خارج از دسترس است"); return; }
+      placeBlockAtPointer(occupied, point);
+      return;
+    }
+
+    const neighbors = [[BLOCK_SIZE,0],[-BLOCK_SIZE,0],[0,BLOCK_SIZE],[0,-BLOCK_SIZE]]
+      .map(([dx,dy]) => world.getAt(gx + dx, gy + dy))
+      .filter(Boolean);
+    if (!neighbors.some(isInReach)) { setStatus("برای قراردادن، کنار یک بلاک نزدیک را انتخاب کن"); return; }
+    const placeAt = world.canPlace(gx, gy, playerRect());
+    if (!placeAt) { setStatus("این محل پر است یا داخل بازیکن قرار می‌گیرد"); return; }
+    const type = blockTypeSelect.value;
+    const newBlock = world.addBlock(placeAt.x, placeAt.y, type);
+    if (newBlock) {
+      selectedBlock = newBlock;
+      hoveredBlock = newBlock;
+      setStatus(`${typeName(type)} قرار داده شد`);
+    }
+    render();
+  }
+
   function placeBlockNearSelection() {
     const target = hoveredBlock || selectedBlock;
     const point = pointerWorld || (target ? { x: target.x + BLOCK_SIZE / 2, y: target.y + BLOCK_SIZE / 2 } : null);
     if (!target || !point) { setStatus("اول یک بلاک را لمس یا انتخاب کن"); return; }
-    placeBlockAtPointer(target, point);
+    placeAtWorldPoint(point);
   }
 
   function update(dt) {
@@ -346,6 +421,19 @@
       ctx.strokeRect(x + 2, y + 2, BLOCK_SIZE - 4, BLOCK_SIZE - 4);
       ctx.lineWidth = 1;
     }
+    if (breakState && breakState.target === block) {
+      const progress = Math.min(1, (performance.now() - breakState.startedAt) / BREAK_DURATION_MS);
+      ctx.strokeStyle = "rgba(25,25,25,.95)";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(x + 7, y + 5); ctx.lineTo(x + 18, y + 18); ctx.lineTo(x + 12, y + 27);
+      if (progress > .25) { ctx.moveTo(x + 18, y + 18); ctx.lineTo(x + 30, y + 10); }
+      if (progress > .5) { ctx.moveTo(x + 18, y + 18); ctx.lineTo(x + 31, y + 31); }
+      if (progress > .75) { ctx.moveTo(x + 12, y + 27); ctx.lineTo(x + 4, y + 35); }
+      ctx.stroke();
+      ctx.fillStyle = "rgba(0,0,0,.7)"; ctx.fillRect(x, y - 6, BLOCK_SIZE, 4);
+      ctx.fillStyle = "#ffe66d"; ctx.fillRect(x, y - 6, BLOCK_SIZE * progress, 4);
+    }
   }
 
   function render() {
@@ -418,6 +506,20 @@
     if (event.pointerType === "mouse") { hoveredBlock = null; render(); }
   });
   canvas.addEventListener("pointerdown", handleCanvasPointer);
+  canvas.addEventListener("pointerup", event => {
+    if (event.pointerType === "mouse" && event.button === 0 && breakState) {
+      const elapsed = performance.now() - breakState.startedAt;
+      if (elapsed < BREAK_DURATION_MS) cancelBreaking(true);
+    }
+  });
+  canvas.addEventListener("pointercancel", () => cancelBreaking(true));
+  window.addEventListener("pointerup", event => {
+    if (event.pointerType === "mouse" && event.button === 0 && breakState) {
+      const elapsed = performance.now() - breakState.startedAt;
+      if (elapsed < BREAK_DURATION_MS) cancelBreaking(true);
+    }
+  });
+  window.addEventListener("pointercancel", () => cancelBreaking(true));
   canvas.addEventListener("contextmenu", event => event.preventDefault());
   window.addEventListener("keydown", keyDown);
   window.addEventListener("keyup", keyUp);
@@ -426,8 +528,8 @@
   connectHoldButton(leftButton, "left");
   connectHoldButton(rightButton, "right");
   jumpButton.addEventListener("pointerdown", event => { event.preventDefault(); jump("touch"); });
-  breakButton.addEventListener("click", breakSelectedBlock);
-  touchBreakButton.addEventListener("click", breakSelectedBlock);
+  connectBreakHold(breakButton);
+  connectBreakHold(touchBreakButton);
   placeButton.addEventListener("click", placeBlockNearSelection);
   touchPlaceButton.addEventListener("click", placeBlockNearSelection);
   tryLandscapeButton.addEventListener("click", requestLandscape);

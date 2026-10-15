@@ -34,3 +34,20 @@ A small browser-based block-world prototype. The code is split into:
 - Browser orientation locking is not guaranteed by every browser; the page displays a rotate-phone prompt in portrait mode on touch devices.
 
 Open `index.html` locally or publish the folder to GitHub Pages. Service worker caching requires HTTPS or localhost.
+
+
+## Mobile controls (v8)
+
+- In portrait mode, the orientation guide asks you to rotate the phone.
+- In landscape mode, left/right and jump buttons stay visible at the bottom, with break/place buttons on the right.
+- Touch controls use safe-area spacing and smaller sizes on short landscape screens.
+- After updating the deployed site, refresh it; if an older offline copy remains, close/reopen the site once so the new service-worker cache activates.
+
+
+## Mouse and mobile controls (v9)
+
+- Laptop: hold left mouse button on a reachable block for 3 seconds to break it; a progress bar and cracks show the progress.
+- Laptop: right-click once on a reachable adjacent empty cell to place the selected block. If clicking an existing block, the block is placed on its nearest face.
+- Mobile: tap a block to select it, then hold the bottom **Break** button for 3 seconds. Tap **Place** once after selecting a target area.
+- Movement buttons are explicitly left-to-right even though the page uses a right-to-left language direction.
+- `E` (hold) breaks the selected/hovered block after 3 seconds; `Q` places a block.
