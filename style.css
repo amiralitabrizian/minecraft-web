@@ -1,368 +1,47 @@
-
-* {
-    box-sizing: border-box;
+* { box-sizing: border-box; }
+html, body { width:100%; height:100%; margin:0; padding:0; overflow:hidden; }
+body { font-family:Tahoma, Arial, sans-serif; background:#101827; overscroll-behavior:none; -webkit-user-select:none; user-select:none; }
+button, select { font:inherit; }
+button { cursor:pointer; touch-action:manipulation; }
+#game-shell { position:relative; width:100%; height:100%; height:100dvh; overflow:hidden; background:#87ceeb; }
+#game-canvas { display:block; width:100%; height:100%; touch-action:none; }
+#top-hud { position:absolute; top:max(8px, env(safe-area-inset-top, 0px)); right:10px; left:10px; display:flex; align-items:flex-start; justify-content:space-between; gap:8px; pointer-events:none; }
+#help, #debug-status { color:#fff; background:rgba(0,0,0,.62); border:1px solid rgba(255,255,255,.18); border-radius:7px; padding:7px 10px; font-size:12px; line-height:1.6; text-shadow:0 1px 2px #000; }
+#debug-status { max-width:45%; text-align:center; }
+#block-panel { position:absolute; top:75px; right:10px; display:flex; align-items:center; flex-wrap:wrap; gap:6px; max-width:min(520px, calc(100% - 20px)); padding:8px; color:white; background:rgba(10,20,30,.72); border:1px solid rgba(255,255,255,.2); border-radius:9px; }
+#block-panel label { font-size:12px; }
+#block-type, #block-panel button, #touch-controls button, #try-landscape { border:2px solid #354254; border-radius:8px; background:#f8fafc; color:#172033; min-height:38px; padding:6px 10px; font-weight:bold; }
+#block-panel button:active, #touch-controls button:active { background:#b9e7ff; transform:translateY(1px); }
+#touch-controls { display:none; position:absolute; inset:auto max(12px, env(safe-area-inset-right, 0px)) max(12px, env(safe-area-inset-bottom, 0px)) max(12px, env(safe-area-inset-left, 0px)); align-items:flex-end; justify-content:space-between; gap:12px; z-index:20; pointer-events:none; }
+#touch-controls .move-controls, #touch-controls .action-controls { display:flex; align-items:flex-end; gap:7px; pointer-events:auto; }
+#touch-controls button { min-width:54px; min-height:54px; padding:7px; font-size:22px; box-shadow:0 3px 0 rgba(0,0,0,.25); -webkit-tap-highlight-color:transparent; }
+#touch-break-button, #touch-place-button { font-size:14px !important; min-width:70px !important; }
+body.touch-device #touch-controls { display:flex; }
+body.touch-device #help { max-width:58%; font-size:10px; }
+body.touch-device #block-panel { top:64px; right:8px; padding:5px; gap:4px; }
+body.touch-device #block-panel label { display:none; }
+body.touch-device #block-type, body.touch-device #block-panel button { min-height:32px; padding:4px 6px; font-size:11px; }
+body.needs-landscape #game-shell { visibility:hidden; pointer-events:none; }
+#rotate-screen { display:none; position:fixed; inset:0; z-index:1000; align-items:center; justify-content:center; padding:20px; overflow:hidden; background:radial-gradient(ellipse at top,#263d60 0%,transparent 60%),linear-gradient(145deg,#101827,#080d16); color:white; text-align:center; }
+body.needs-landscape #rotate-screen { display:flex; }
+.rotate-content { width:100%; max-width:360px; display:flex; flex-direction:column; align-items:center; gap:12px; }
+.rotate-content h1 { margin:4px 0; font-size:clamp(24px,6vw,34px); }
+.rotate-content p { margin:0; color:#cbd5e1; font-size:15px; line-height:1.9; }
+.rotate-hint { padding:7px 16px; border:1px solid rgba(125,211,252,.45); border-radius:30px; background:rgba(56,189,248,.12); color:#7dd3fc; }
+.phone-animation { position:relative; width:160px; height:125px; display:flex; align-items:center; justify-content:center; }
+.phone-frame { width:62px; height:105px; padding:5px; border:4px solid #e2e8f0; border-radius:13px; background:#334155; transform-origin:center; animation:rotate-phone 2.8s ease-in-out infinite; }
+.phone-screen { position:relative; width:100%; height:100%; overflow:hidden; border-radius:5px; background:#7dd3fc; }
+.phone-sky { position:absolute; inset:0 0 35%; background:linear-gradient(#38bdf8,#bae6fd); }
+.phone-grass { position:absolute; bottom:0; width:100%; height:35%; border-top:5px solid #86efac; background:#65a30d; }
+.rotate-arrow { position:absolute; right:5px; top:0; color:#7dd3fc; font-size:32px; animation:arrow-pulse 1.2s ease-in-out infinite; }
+@keyframes rotate-phone { 0%,15%{transform:rotate(0)} 65%,100%{transform:rotate(90deg)} }
+@keyframes arrow-pulse { 0%,100%{opacity:.5;transform:scale(.9)} 50%{opacity:1;transform:scale(1.15)} }
+@media (orientation:landscape) and (max-height:520px) {
+  #touch-controls { bottom:max(6px, env(safe-area-inset-bottom, 0px)); }
+  #touch-controls button { min-width:44px; min-height:44px; font-size:19px; }
+  #touch-break-button, #touch-place-button { min-width:60px !important; font-size:12px !important; }
+  #block-panel { top:58px; }
+  #help, #debug-status { font-size:10px; padding:4px 7px; }
 }
-
-html,
-body {
-    width: 100%;
-    height: 100%;
-    margin: 0;
-    padding: 0;
-    overflow: hidden;
-}
-
-body {
-    font-family: Arial, sans-serif;
-    background: #87ceeb;
-    overscroll-behavior: none;
-}
-
-/* ------------------------------
-   صفحه راهنمای چرخاندن گوشی
------------------------------- */
-
-#rotate-screen {
-    display: none;
-    position: fixed;
-    inset: 0;
-    z-index: 1000;
-    align-items: center;
-    justify-content: center;
-    padding: 24px;
-    overflow: hidden;
-    background:
-        radial-gradient(ellipse at top, #263d60 0%, transparent 60%),
-        linear-gradient(145deg, #101827, #080d16);
-    color: white;
-    text-align: center;
-}
-
-body.needs-landscape #rotate-screen {
-    display: flex;
-}
-
-body.needs-landscape #game {
-    visibility: hidden;
-    pointer-events: none;
-}
-
-.rotate-content {
-    width: 100%;
-    max-width: 360px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 14px;
-}
-
-.rotate-content h1 {
-    margin: 4px 0;
-    font-size: clamp(24px, 6vw, 34px);
-    color: #ffffff;
-}
-
-.rotate-content p {
-    max-width: 300px;
-    margin: 0;
-    color: #cbd5e1;
-    font-size: 16px;
-    line-height: 1.9;
-}
-
-.rotate-hint {
-    margin-top: 4px;
-    padding: 8px 18px;
-    border: 1px solid rgba(125, 211, 252, 0.45);
-    border-radius: 30px;
-    background: rgba(56, 189, 248, 0.12);
-    color: #7dd3fc;
-    font-size: 14px;
-}
-
-/* تصویر متحرک گوشی */
-
-.phone-animation {
-    position: relative;
-    width: 180px;
-    height: 145px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.phone-frame {
-    position: relative;
-    width: 62px;
-    height: 112px;
-    padding: 5px;
-    border: 4px solid #e2e8f0;
-    border-radius: 13px;
-    background: #334155;
-    box-shadow: 0 0 28px rgba(56, 189, 248, 0.2);
-    transform-origin: center;
-    animation: rotate-phone 2.8s ease-in-out infinite;
-}
-
-.phone-screen {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-    border-radius: 5px;
-    background: #7dd3fc;
-}
-
-.phone-sky {
-    position: absolute;
-    inset: 0 0 35% 0;
-    background: linear-gradient(#38bdf8, #bae6fd);
-}
-
-.phone-grass {
-    position: absolute;
-    bottom: 0;
-    width: 100%;
-    height: 35%;
-    border-top: 5px solid #86efac;
-    background: #65a30d;
-}
-
-.phone-camera {
-    position: absolute;
-    top: 4px;
-    left: 50%;
-    width: 12px;
-    height: 3px;
-    border-radius: 10px;
-    background: #64748b;
-    transform: translateX(-50%);
-}
-
-.rotate-arrow {
-    position: absolute;
-    right: 8px;
-    top: 0;
-    color: #7dd3fc;
-    font-size: 34px;
-    animation: arrow-pulse 1.2s ease-in-out infinite;
-}
-
-@keyframes rotate-phone {
-    0%, 15% {
-        transform: rotate(0deg);
-    }
-
-    65%, 85% {
-        transform: rotate(90deg);
-    }
-
-    100% {
-        transform: rotate(90deg);
-    }
-}
-
-@keyframes arrow-pulse {
-    0%, 100% {
-        opacity: 0.5;
-        transform: scale(0.9);
-    }
-
-    50% {
-        opacity: 1;
-        transform: scale(1.15);
-    }
-}
-
-/* ------------------------------
-   محیط بازی
------------------------------- */
-
-#game {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    height: 100dvh;
-    overflow: hidden;
-    background: linear-gradient(#78cafa, #d1f1ff);
-    touch-action: none;
-}
-
-#player {
-    position: absolute;
-    left: 80px;
-    top: 0;
-    width: 40px;
-    height: 40px;
-    background: #008000;
-    z-index: 5;
-    pointer-events: none;
-}
-
-#ground {
-    position: absolute;
-    left: 0;
-    bottom: 0;
-    width: 100%;
-    height: 22%;
-    min-height: 80px;
-    z-index: 2;
-    pointer-events: none;
-}
-
-.grass {
-    height: 16px;
-    background: #55b932;
-    border-top: 4px solid #7be34a;
-}
-
-.dirt {
-    height: calc(100% - 16px);
-    background-color: #89572f;
-    background-image: linear-gradient(
-        35deg,
-        transparent 45%,
-        rgba(0, 0, 0, 0.08) 46%,
-        transparent 55%
-    );
-    background-size: 30px 30px;
-}
-
-/* کنترل‌های لمسی */
-
-#touch-controls {
-    display: none;
-    position: fixed;
-    left: max(12px, env(safe-area-inset-left, 0px));
-    bottom: max(12px, env(safe-area-inset-bottom, 0px));
-    z-index: 100;
-    grid-template-columns: repeat(3, 54px);
-    grid-template-rows: repeat(2, 54px);
-    gap: 6px;
-    justify-items: center;
-    align-items: center;
-    touch-action: none;
-    user-select: none;
-    -webkit-user-select: none;
-}
-
-#jump-button {
-    grid-column: 2;
-    grid-row: 1;
-}
-
-
-#left-button {
-    grid-column: 3;
-    grid-row: 2;
-}
-
-#right-button {
-    grid-column: 1;
-    grid-row: 2;
-}
-
-
-#touch-controls button {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 54px;
-    height: 54px;
-    padding: 0;
-    border: 2px solid #444;
-    border-radius: 12px;
-    background: rgba(255, 255, 255, 0.94);
-    color: #222;
-    font-size: 26px;
-    font-weight: bold;
-    box-shadow: 0 3px 0 rgba(0, 0, 0, 0.2);
-    touch-action: none;
-    -webkit-tap-highlight-color: transparent;
-}
-
-#touch-controls button:active {
-    background: #aee5ff;
-    transform: translateY(2px);
-}
-
-body.touch-device #touch-controls {
-    display: grid;
-}
-
-@media (pointer: coarse), (hover: none) {
-    #touch-controls {
-        display: grid;
-    }
-}
-
-/* راهنمای کنترل‌ها و وضعیت */
-
-#help {
-    position: absolute;
-    top: max(10px, env(safe-area-inset-top, 0px));
-    left: 10px;
-    z-index: 10;
-    max-width: calc(100% - 20px);
-    padding: 8px 10px;
-    color: white;
-    background: rgba(0, 0, 0, 0.6);
-    border-radius: 6px;
-    font-size: 12px;
-    pointer-events: none;
-}
-
-#debug-status {
-    position: absolute;
-    top: 48px;
-    left: 10px;
-    z-index: 10;
-    padding: 5px 8px;
-    border-radius: 5px;
-    background: rgba(0, 0, 0, 0.55);
-    color: white;
-    font-size: 11px;
-    pointer-events: none;
-}
-
-@media (max-width: 600px) {
-    #touch-controls {
-        grid-template-columns: repeat(3, 50px);
-        grid-template-rows: repeat(2, 50px);
-        gap: 6px;
-    }
-
-    #touch-controls button {
-        width: 50px;
-        height: 50px;
-        font-size: 24px;
-    }
-}
-
-@media (orientation: landscape) and (max-height: 600px) {
-    #ground {
-        height: 24%;
-        min-height: 65px;
-    }
-
-    #touch-controls {
-        bottom: max(8px, env(safe-area-inset-bottom, 0px));
-        grid-template-columns: repeat(3, 46px);
-        grid-template-rows: repeat(2, 46px);
-        gap: 5px;
-    }
-
-    #touch-controls button {
-        width: 46px;
-        height: 46px;
-        font-size: 22px;
-    }
-}
-
-/* در صورت فعال بودن کاهش انیمیشن در دستگاه */
-@media (prefers-reduced-motion: reduce) {
-    .phone-frame,
-    .rotate-arrow {
-        animation-duration: 5s;
-    }
-}
+@media (pointer:coarse), (hover:none) { #touch-controls { display:flex; } }
+@media (prefers-reduced-motion:reduce) { .phone-frame,.rotate-arrow { animation-duration:5s; } }

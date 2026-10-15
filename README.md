@@ -1,26 +1,36 @@
+# Minecraft Web — Block World milestone
 
-# Minecraft Web
+A small browser-based block-world prototype. The code is split into:
 
-A simple web prototype for Minecraft2D, built with HTML, CSS and JavaScript.
+- `world.js`: block data, world generation, block lookup/removal and placement validation.
+- `script.js`: rendering, keyboard/mouse/touch input, player physics, collision and block interaction.
+- `style.css`: responsive laptop/mobile layout and landscape prompt.
+- `index.html`: page structure.
+- `manifest.json` and `sw.js`: install metadata and offline cache.
 
-## Controls
+## Laptop / mouse controls
 
-- Physical A key: Move left
-- Physical D key: Move right
-- Touch left arrow: Move left
-- Touch right arrow: Move right
+- Move the mouse over a block to highlight it.
+- Left-click a reachable block to break it.
+- Right-click a reachable block to place the chosen block type against the nearest face of that block.
+- `A` / `D` or `←` / `→`: move.
+- `Space`, `W` or `↑`: jump.
+- `E`, `Backspace` or `Delete`: break the selected block as an alternative to left-click.
+- `Q`: place the chosen block as an alternative to right-click.
 
-Keyboard controls use `KeyboardEvent.code`, so the physical A and D keys work with Persian or English keyboard layouts.
+## Mobile / touch controls
 
-## Keyboard Events
+- Turn the phone sideways (landscape).
+- Hold `←` / `→` to move; tap `↑` to jump.
+- Tap a nearby block to select it, then use the separate **شکستن** or **قراردادن** buttons.
 
-- `keydown`: runs when a key is pressed.
-- `keyup`: runs when a key is released.
+## Notes
 
-## Touch Debugging
+- Blocks are separate records with world coordinates and a type.
+- The player collides with solid blocks horizontally and vertically.
+- Bedrock cannot be broken.
+- Placing requires an empty adjacent cell and will not place inside the player.
+- Inventory, crafting, enemies, health, hunger and saving are not included yet.
+- Browser orientation locking is not guaranteed by every browser; the page displays a rotate-phone prompt in portrait mode on touch devices.
 
-The console logs device detection, viewport orientation, pointer-down events and pointer-stop events. These logs help identify whether a problem is in device detection, button visibility or input handling.
-
-## PWA
-
-The project includes a web app manifest and a service worker for basic offline caching. The manifest requests landscape orientation for the installed app; support depends on the browser.
+Open `index.html` locally or publish the folder to GitHub Pages. Service worker caching requires HTTPS or localhost.

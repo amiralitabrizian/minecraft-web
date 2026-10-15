@@ -1,53 +1,66 @@
-
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fa" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <meta name="theme-color" content="#101827">
-    <title>Minecraft Web</title>
-    <link rel="stylesheet" href="./style.css?v=5">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+  <meta name="theme-color" content="#101827">
+  <meta name="description" content="Minecraft Web — a small block-based browser game">
+  <title>Minecraft Web</title>
+  <link rel="manifest" href="./manifest.json">
+  <link rel="stylesheet" href="./style.css?v=7">
 </head>
 <body>
-    <!-- راهنمای چرخاندن گوشی -->
-    <section id="rotate-screen" aria-live="polite">
-        <div class="rotate-content">
-            <div class="phone-animation" aria-hidden="true">
-                <div class="phone-frame">
-                    <div class="phone-screen">
-                        <div class="phone-sky"></div>
-                        <div class="phone-grass"></div>
-                    </div>
-                    <div class="phone-camera"></div>
-                </div>
-                <span class="rotate-arrow">↻</span>
-            </div>
+  <section id="rotate-screen" aria-live="polite">
+    <div class="rotate-content">
+      <div class="phone-animation" aria-hidden="true">
+        <div class="phone-frame"><div class="phone-screen"><div class="phone-sky"></div><div class="phone-grass"></div></div></div>
+        <span class="rotate-arrow">↻</span>
+      </div>
+      <h1>گوشی را افقی کن!</h1>
+      <p>برای شروع بازی، گوشی را بچرخان و در حالت افقی نگه دار.</p>
+      <div class="rotate-hint">↔ حالت افقی</div>
+      <button id="try-landscape" type="button">تلاش برای حالت افقی</button>
+    </div>
+  </section>
 
-            <h1>گوشی را افقی کن!</h1>
-            <p>برای شروع بازی، گوشی را بچرخان و در حالت افقی نگه دار.</p>
-            <div class="rotate-hint">↔ حالت افقی</div>
-        </div>
+  <main id="game-shell">
+    <canvas id="game-canvas" aria-label="محیط بازی"></canvas>
+    <header id="top-hud">
+      <div id="help">لپ‌تاپ: A/D یا ←/→ حرکت، Space پرش، E شکستن، Q قراردادن</div>
+      <div id="debug-status" role="status">در حال آماده‌سازی...</div>
+    </header>
+
+    <section id="block-panel" aria-label="ابزار بلاک‌ها">
+      <label for="block-type">بلاک برای قراردادن</label>
+      <select id="block-type">
+        <option value="grass">چمن</option>
+        <option value="dirt">خاک</option>
+        <option value="stone">سنگ</option>
+        <option value="wood">چوب</option>
+        <option value="leaves">برگ</option>
+      </select>
+      <button id="break-button" type="button">شکستن بلاک</button>
+      <button id="place-button" type="button">قراردادن بلاک</button>
     </section>
 
-    <!-- بازی -->
-    <main id="game">
-        <div id="player"></div>
-
-        <div id="ground">
-            <div class="grass"></div>
-            <div class="dirt"></div>
-        </div>
-
-        <div id="touch-controls">
-            <button id="jump-button" type="button" aria-label="پرش">↑</button>
-            <button id="left-button" type="button" aria-label="حرکت به چپ">←</button>
-            <button id="right-button" type="button" aria-label="حرکت به راست">→</button>
-        </div>
-
-        <div id="help">A / D: حرکت | Space / ↑: پرش</div>
-        <div id="debug-status">در حال آماده‌سازی بازی...</div>
-    </main>
-
-    <script src="./script.js?v=5"></script>
+    <nav id="touch-controls" aria-label="کنترل لمسی">
+      <div class="move-controls">
+        <button id="left-button" type="button" aria-label="حرکت به چپ">←</button>
+        <button id="right-button" type="button" aria-label="حرکت به راست">→</button>
+      </div>
+      <div class="action-controls">
+        <button id="jump-button" type="button" aria-label="پرش">↑</button>
+        <button id="touch-break-button" type="button">شکستن</button>
+        <button id="touch-place-button" type="button">قراردادن</button>
+      </div>
+    </nav>
+  </main>
+  <script src="./world.js?v=7"></script>
+  <script src="./script.js?v=7"></script>
+  <script>
+    if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+      window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(err => console.warn('Service worker registration failed:', err)));
+    }
+  </script>
 </body>
 </html>
