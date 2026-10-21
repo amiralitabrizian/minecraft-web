@@ -15,6 +15,9 @@
   const touchBreakButton = document.getElementById("touch-break-button");
   const touchPlaceButton = document.getElementById("touch-place-button");
   const blockTypeSelect = document.getElementById("block-type");
+  const hotbarElement = document.getElementById("hotbar");
+  const inventoryElement = document.getElementById("inventory-panel");
+  const inventoryToggle = document.getElementById("inventory-toggle");
 
   if (!canvas || !ctx || !window.MinecraftWorld) throw new Error("Game setup failed. Check index.html and world.js.");
 
@@ -31,6 +34,12 @@
   let worldReady = false;
   let dpr = 1;
   let breakState = null;
+  const drops = [];
+  const inventory = Array(36).fill(null);
+  let selectedSlot = 0;
+  let inventoryOpen = false;
+  const STACK_LIMIT = 64;
+  const PLACEABLE_TYPES = new Set(["grass", "dirt", "stone", "wood", "leaves"]);
   const BREAK_DURATION_MS = 1500;
 
   const MOVE_SPEED = 260;
@@ -123,7 +132,9 @@
     if (code === "KeyA" || key === "a" || code === "ArrowLeft") { keys.left = true; event.preventDefault(); }
     if (code === "KeyD" || key === "d" || code === "ArrowRight") { keys.right = true; event.preventDefault(); }
     if (code === "Space" || code === "ArrowUp" || key === "w") { event.preventDefault(); if (!event.repeat) jump("keyboard"); }
-    if (!event.repeat && (key === "e" || code === "KeyE" || code === "Backspace" || code === "Delete")) { event.preventDefault(); startBreaking(hoveredBlock || selectedBlock); }
+    if (!event.repeat && (key === "e" || code === "KeyE")) { event.preventDefault(); inventoryOpen = !inventoryOpen; renderInventory(); return; }
+    if (!event.repeat && /^[1-9]$/.test(key)) { selectedSlot = Number(key) - 1; renderInventory(); }
+    if (!event.repeat && (code === "Backspace" || code === "Delete")) { event.preventDefault(); startBreaking(hoveredBlock || selectedBlock); }
     if (!event.repeat && (key === "q" || code === "KeyQ")) { event.preventDefault(); placeBlockNearSelection(); }
   }
 
@@ -210,11 +221,121 @@
     return ({ grass: "چمن", dirt: "خاک", stone: "سنگ", wood: "چوب", leaves: "برگ", bedrock: "سنگ‌بستر" })[type] || type;
   }
 
+
+  function addItem(type, amount = 1) {
+    let remaining = amount;
+    for (const stack of inventory) {
+      if (stack && stack.type === type && stack.count < STACK_LIMIT) {
+        const added = Math.min(STACK_LIMIT - stack.count, remaining);
+        stack.count += added; remaining -= added;
+        if (!remaining) { renderInventory(); return true; }
+      }
+    }
+    for (let i = 0; i < inventory.length; i++) {
+      if (!inventory[i]) {
+        const added = Math.min(STACK_LIMIT, remaining);
+        inventory[i] = { type, count: added }; remaining -= added;
+        if (!remaining) { renderInventory(); return true; }
+      }
+    }
+    renderInventory();
+    return remaining === 0;
+  }
+
+  function consumeSelectedItem() {
+    const stack = inventory[selectedSlot];
+    if (!stack || !PLACEABLE_TYPES.has(stack.type) || stack.count < 1) return false;
+    stack.count--;
+    if (stack.count <= 0) inventory[selectedSlot] = null;
+    renderInventory();
+    return true;
+  }
+
+  function selectedItemType() {
+    const stack = inventory[selectedSlot];
+    return stack && PLACEABLE_TYPES.has(stack.type) ? stack.type : null;
+  }
+
+  function renderInventory() {
+    if (!hotbarElement) return;
+    hotbarElement.innerHTML = "";
+    for (let i = 0; i < 9; i++) {
+      const slot = document.createElement("button");
+      slot.type = "button";
+      slot.className = "inventory-slot" + (selectedSlot === i ? " selected" : "");
+      slot.setAttribute("aria-label", `خانه ${i + 1}${inventory[i] ? `، ${typeName(inventory[i].type)}، تعداد ${inventory[i].count}` : "، خالی"}`);
+      slot.innerHTML = `<span class="slot-number">${i + 1}</span>${inventory[i] ? `<span class="slot-icon ${inventory[i].type}"></span><span class="slot-count">${inventory[i].count}</span>` : ""}`;
+      slot.addEventListener("click", () => { selectedSlot = i; renderInventory(); setStatus(inventory[i] ? `انتخاب شد: ${typeName(inventory[i].type)} ×${inventory[i].count}` : "این خانه خالی است"); });
+      hotbarElement.appendChild(slot);
+    }
+    if (inventoryElement) {
+      inventoryElement.hidden = !inventoryOpen;
+      if (inventoryOpen) {
+        inventoryElement.innerHTML = '<div class="inventory-heading"><div class="inventory-title">Inventory — برای انتخاب، روی خانه بزن</div><button type="button" id="inventory-close">بستن ✕</button></div><div class="inventory-grid"></div>';
+        inventoryElement.querySelector("#inventory-close").addEventListener("click", () => { inventoryOpen = false; renderInventory(); });
+        const grid = inventoryElement.querySelector(".inventory-grid");
+        for (let i = 9; i < 36; i++) {
+          const slot = document.createElement("button");
+          slot.type = "button"; slot.className = "inventory-slot";
+          slot.innerHTML = `<span class="slot-number">${i + 1}</span>${inventory[i] ? `<span class="slot-icon ${inventory[i].type}"></span><span class="slot-count">${inventory[i].count}</span>` : ""}`;
+          slot.addEventListener("click", () => {
+            if (inventory[i]) {
+              const old = inventory[selectedSlot]; inventory[selectedSlot] = inventory[i]; inventory[i] = old;
+              selectedSlot = Math.min(selectedSlot, 8); renderInventory();
+            }
+          });
+          grid.appendChild(slot);
+        }
+      }
+    }
+  }
+
+  function spawnDrop(block) {
+    drops.push({ type: block.type, x: block.x + BLOCK_SIZE / 2 - 9, y: block.y + BLOCK_SIZE / 2 - 9,
+      vx: (Math.random() - 0.5) * 55, vy: -100, age: 0 });
+  }
+
+  function updateDrops(dt) {
+    for (let i = drops.length - 1; i >= 0; i--) {
+      const drop = drops[i];
+      drop.age += dt;
+      drop.vy += 420 * dt;
+      drop.x += drop.vx * dt; drop.y += drop.vy * dt;
+      const below = world.getAt(Math.floor((drop.x + 9) / BLOCK_SIZE) * BLOCK_SIZE,
+        Math.floor((drop.y + 18) / BLOCK_SIZE) * BLOCK_SIZE);
+      if (below && drop.vy > 0 && drop.y + 18 >= below.y && drop.y < below.y) {
+        drop.y = below.y - 18; drop.vy = 0; drop.vx *= 0.6;
+      }
+      const dx = player.x + player.width / 2 - (drop.x + 9);
+      const dy = player.y + player.height / 2 - (drop.y + 9);
+      if (Math.hypot(dx, dy) < 58) {
+        if (addItem(drop.type, 1)) {
+          drops.splice(i, 1);
+          setStatus(`${typeName(drop.type)} جمع شد و وارد Inventory شد`);
+        }
+      }
+    }
+  }
+
+  function drawDrops() {
+    for (const drop of drops) {
+      const x = Math.round(drop.x - camera.x), y = Math.round(drop.y - camera.y);
+      if (x < -20 || x > gameShell.clientWidth + 20 || y < -20 || y > gameShell.clientHeight + 20) continue;
+      const colors = COLORS[drop.type] || COLORS.dirt;
+      ctx.save(); ctx.translate(x + 9, y + 9); ctx.rotate(Math.sin(drop.age * 5) * 0.12);
+      ctx.fillStyle = "rgba(0,0,0,.25)"; ctx.fillRect(-8, 3, 17, 17);
+      ctx.fillStyle = colors.side; ctx.fillRect(-8, -8, 16, 16);
+      ctx.fillStyle = colors.top; ctx.fillRect(-6, -6, 12, 5);
+      ctx.strokeStyle = "#fff"; ctx.lineWidth = 1; ctx.strokeRect(-8, -8, 16, 16); ctx.restore();
+    }
+  }
+
   function breakSelectedBlock(target = selectedBlock) {
     if (!target || !world.blocks.includes(target)) { setStatus("اول یک بلاک را انتخاب کن"); return false; }
     if (target.type === "bedrock") { setStatus("سنگ‌بستر قابل شکستن نیست"); return false; }
     if (!isInReach(target)) { setStatus("بلاک خارج از دسترس است"); return false; }
     const name = typeName(target.type);
+    spawnDrop(target);
     world.removeBlock(target);
     if (selectedBlock === target) selectedBlock = null;
     if (hoveredBlock === target) hoveredBlock = null;
@@ -291,9 +412,11 @@
 
     const placeAt = world.canPlace(x, y, playerRect());
     if (!placeAt) { setStatus("این محل پر است، به بلاک دیگری وصل نیست یا داخل بازیکن قرار می‌گیرد"); return; }
-    const type = blockTypeSelect.value;
+    const type = selectedItemType();
+    if (!type) { setStatus("اول Hotbar را انتخاب کن؛ خانهٔ انتخاب‌شده بلاک ندارد"); return; }
     const newBlock = world.addBlock(placeAt.x, placeAt.y, type);
     if (newBlock) {
+      consumeSelectedItem();
       selectedBlock = newBlock;
       hoveredBlock = newBlock;
       setStatus(`${typeName(type)} قرار داده شد`);
@@ -321,9 +444,11 @@
     if (!neighbors.some(isInReach)) { setStatus("برای قراردادن، کنار یک بلاک نزدیک را انتخاب کن"); return; }
     const placeAt = world.canPlace(gx, gy, playerRect());
     if (!placeAt) { setStatus("این محل پر است یا داخل بازیکن قرار می‌گیرد"); return; }
-    const type = blockTypeSelect.value;
+    const type = selectedItemType();
+    if (!type) { setStatus("اول Hotbar را انتخاب کن؛ خانهٔ انتخاب‌شده بلاک ندارد"); return; }
     const newBlock = world.addBlock(placeAt.x, placeAt.y, type);
     if (newBlock) {
+      consumeSelectedItem();
       selectedBlock = newBlock;
       hoveredBlock = newBlock;
       setStatus(`${typeName(type)} قرار داده شد`);
@@ -382,6 +507,7 @@
       }
     }
 
+    updateDrops(dt);
     keepPlayerInWorld();
     updateCamera();
   }
@@ -453,6 +579,7 @@
     }
 
     for (const block of world.blocks) drawBlock(block, width, height);
+    drawDrops();
 
     // Pixel-art player with hair, eyes, nose, smile, shirt seams and shoes.
     const px = Math.round(player.x - camera.x), py = Math.round(player.y - camera.y);
@@ -530,6 +657,7 @@
   jumpButton.addEventListener("pointerdown", event => { event.preventDefault(); jump("touch"); });
   connectBreakHold(breakButton);
   connectBreakHold(touchBreakButton);
+  inventoryToggle.addEventListener("click", () => { inventoryOpen = !inventoryOpen; renderInventory(); });
   placeButton.addEventListener("click", placeBlockNearSelection);
   touchPlaceButton.addEventListener("click", placeBlockNearSelection);
   tryLandscapeButton.addEventListener("click", requestLandscape);
@@ -540,6 +668,7 @@
   // Start on the top of the individual grass blocks.
   player.y = -player.height;
   player.onGround = false;
+  renderInventory();
   updateDeviceMode();
   resizeCanvas();
   worldReady = true;

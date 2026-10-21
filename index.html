@@ -7,7 +7,7 @@
   <meta name="description" content="Minecraft Web — a small block-based browser game">
   <title>Minecraft Web</title>
   <link rel="manifest" href="./manifest.json">
-  <link rel="stylesheet" href="./style.css?v=10">
+  <link rel="stylesheet" href="./style.css?v=11">
 </head>
 <body>
   <section id="rotate-screen" aria-live="polite">
@@ -26,13 +26,13 @@
   <main id="game-shell">
     <canvas id="game-canvas" aria-label="محیط بازی"></canvas>
     <header id="top-hud">
-      <div id="help">لپ‌تاپ: A/D یا ←/→ حرکت، Space پرش، کلیک چپ را ۱٫۵ ثانیه نگه دار: شکستن؛ کلیک راست: قراردادن</div>
+      <div id="help">لپ‌تاپ: A/D حرکت، Space پرش، کلیک چپ و نگه‌داشتن: شکستن، کلیک راست: قراردادن؛ E: Inventory؛ 1 تا 9: انتخاب Hotbar</div>
       <div id="debug-status" role="status">در حال آماده‌سازی...</div>
     </header>
 
     <section id="block-panel" aria-label="ابزار بلاک‌ها">
       <label for="block-type">بلاک برای قراردادن</label>
-      <select id="block-type">
+      <select id="block-type" aria-label="بلاک آزمایشی">
         <option value="grass">چمن</option>
         <option value="dirt">خاک</option>
         <option value="stone">سنگ</option>
@@ -43,6 +43,9 @@
       <button id="place-button" type="button">قراردادن بلاک</button>
     </section>
 
+    <button id="inventory-toggle" type="button">Inventory</button>
+    <div id="inventory-panel" hidden></div>
+    <nav id="hotbar" aria-label="نوار ابزار"></nav>
     <nav id="touch-controls" aria-label="کنترل لمسی">
       <div class="move-controls">
         <button id="left-button" type="button" aria-label="حرکت به چپ">←</button>
@@ -55,8 +58,8 @@
       </div>
     </nav>
   </main>
-  <script src="./world.js?v=10"></script>
-  <script src="./script.js?v=10"></script>
+  <script src="./world.js?v=11"></script>
+  <script src="./script.js?v=11"></script>
   <script>
     if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
       window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(err => console.warn('Service worker registration failed:', err)));

@@ -184,3 +184,59 @@ body.needs-landscape #rotate-screen { display:flex; }
   #touch-break-button, #touch-place-button { min-width:52px !important; font-size:10px !important; }
   #block-panel { right:5px; }
 }
+
+
+/* Drop + Inventory + Hotbar */
+#hotbar {
+  position:absolute; z-index:22; left:50%; transform:translateX(-50%);
+  bottom:calc(82px + env(safe-area-inset-bottom, 0px));
+  display:flex; gap:4px; padding:5px; border:2px solid #303b49;
+  border-radius:8px; background:rgba(13,20,30,.82); direction:ltr;
+  max-width:calc(100vw - 16px);
+}
+.inventory-slot {
+  position:relative; width:42px; height:42px; min-width:0; padding:0;
+  border:2px solid #6b7280; border-radius:4px; background:rgba(55,65,81,.9);
+  color:#fff; touch-action:manipulation;
+}
+.inventory-slot.selected { border:3px solid #ffe66d; background:rgba(95,88,54,.95); }
+.slot-number { position:absolute; left:3px; top:1px; font-size:9px; color:#e5e7eb; }
+.slot-count { position:absolute; right:2px; bottom:0; font-size:11px; font-weight:bold; color:white; text-shadow:1px 1px #111; }
+.slot-icon { position:absolute; width:22px; height:22px; left:8px; top:9px; border:1px solid rgba(255,255,255,.35); box-shadow:inset 0 4px rgba(255,255,255,.15); }
+.slot-icon.grass { background:linear-gradient(#76d747 0 30%,#4d9d2a 30%); }
+.slot-icon.dirt { background:#774323; }
+.slot-icon.stone { background:#858991; }
+.slot-icon.wood { background:linear-gradient(90deg,#86572f 0 35%,#bd8950 35% 65%,#86572f 65%); }
+.slot-icon.leaves { background:#287c30; border-radius:3px; }
+#inventory-panel:not([hidden]) {
+  position:absolute; z-index:40; left:50%; top:50%; transform:translate(-50%,-50%);
+  width:min(390px,calc(100vw - 24px)); padding:12px; color:#fff;
+  border:2px solid #aab4c2; border-radius:10px; background:rgba(15,23,42,.97);
+}
+.inventory-title { margin-bottom:9px; font-size:14px; font-weight:bold; }
+.inventory-grid { display:grid; grid-template-columns:repeat(9,minmax(0,1fr)); gap:4px; }
+.inventory-grid .inventory-slot { width:100%; height:auto; aspect-ratio:1; }
+@media (max-width:700px) {
+  #hotbar { bottom:calc(68px + env(safe-area-inset-bottom, 0px)); gap:2px; padding:3px; }
+  .inventory-slot { width:clamp(27px,7.2vw,38px); height:clamp(30px,8vw,38px); }
+  .slot-icon { width:18px; height:18px; left:calc(50% - 9px); top:9px; }
+  .slot-number { font-size:8px; }
+}
+@media (orientation:landscape) and (max-height:430px) {
+  #hotbar { bottom:calc(54px + env(safe-area-inset-bottom, 0px)); }
+  .inventory-slot { width:32px; height:32px; }
+  .slot-icon { width:17px; height:17px; left:6px; top:7px; }
+}
+
+.inventory-heading { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+#inventory-close { border:1px solid #94a3b8; border-radius:5px; background:#334155; color:#fff; padding:5px 8px; }
+#block-panel label, #block-type { display:none !important; }
+
+#inventory-toggle {
+  position:absolute; z-index:24; top:58px; left:10px; padding:6px 9px;
+  border:1px solid #cbd5e1; border-radius:6px; background:rgba(15,23,42,.88);
+  color:#fff; font-size:12px; font-weight:bold;
+}
+@media (orientation:landscape) and (max-height:430px) {
+  #inventory-toggle { top:42px; left:6px; padding:4px 6px; font-size:10px; }
+}
