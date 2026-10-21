@@ -240,3 +240,186 @@ body.needs-landscape #rotate-screen { display:flex; }
 @media (orientation:landscape) and (max-height:430px) {
   #inventory-toggle { top:42px; left:6px; padding:4px 6px; font-size:10px; }
 }
+
+
+/* v12: usable inventory, drag-and-drop slots, item-name tooltips, and animated player legs. */
+#inventory-panel:not([hidden]) {
+  top: max(54px, 7vh);
+  transform: translateX(-50%);
+  max-height: min(66vh, calc(100% - 135px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: #94a3b8 #1e293b;
+  touch-action: pan-y;
+}
+#inventory-panel::-webkit-scrollbar { width: 9px; }
+#inventory-panel::-webkit-scrollbar-track { background:#1e293b; border-radius:8px; }
+#inventory-panel::-webkit-scrollbar-thumb { background:#94a3b8; border:2px solid #1e293b; border-radius:8px; }
+.inventory-grid { padding: 8px 2px 10px; }
+.inventory-slot { overflow:visible; }
+.inventory-slot.drag-source { opacity:.55; outline:2px dashed #7dd3fc; outline-offset:1px; }
+.slot-tooltip {
+  position:absolute; display:none; z-index:60; left:50%; bottom:calc(100% + 5px); transform:translateX(-50%);
+  max-width:180px; width:max-content; padding:5px 8px; border:1px solid #94a3b8; border-radius:5px;
+  background:rgba(9,15,25,.97); color:#fff; font:12px/1.3 Tahoma,Arial,sans-serif; white-space:nowrap;
+  pointer-events:none; box-shadow:0 2px 7px rgba(0,0,0,.35);
+}
+.inventory-slot:hover .slot-tooltip,
+.inventory-slot:focus-visible .slot-tooltip,
+.inventory-slot.selected .slot-tooltip { display:block; }
+.inventory-title { display:flex; align-items:center; gap:6px; }
+.inventory-title span { color:#cbd5e1; font-size:11px; font-weight:normal; }
+#inventory-close { flex-shrink:0; }
+@media (max-width:700px) {
+  #inventory-panel:not([hidden]) { top:max(42px, 6vh); max-height:calc(100% - 112px); width:min(390px,calc(100vw - 16px)); padding:9px; }
+  .inventory-grid { gap:3px; }
+  .inventory-grid .inventory-slot { min-width:0; min-height:0; }
+  .slot-tooltip { max-width:130px; font-size:10px; padding:4px 5px; }
+}
+@media (orientation:landscape) and (max-height:430px) {
+  #inventory-panel:not([hidden]) { top:36px; max-height:calc(100% - 90px); }
+}
+
+
+/* v13: final inventory, player proportions, and non-overlapping device controls. */
+#block-panel { display:none !important; }
+#inventory-panel:not([hidden]) {
+  top: max(48px, 5vh);
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(520px, calc(100vw - 20px));
+  max-height: min(72vh, calc(100% - 110px));
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: #94a3b8 #1e293b;
+  padding: 10px;
+  box-sizing: border-box;
+}
+.inventory-heading { position: sticky; top: -10px; z-index: 5; padding: 3px 0 8px; background: rgba(15,23,42,.98); }
+.inventory-title { min-width: 0; flex-wrap: wrap; }
+.inventory-title span { white-space: normal; }
+.inventory-grid-scroll { max-height: min(48vh, 300px); overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: #94a3b8 #1e293b; }
+.inventory-grid { padding: 6px 2px; }
+.inventory-slot { user-select: none; -webkit-user-select: none; touch-action: pan-y; }
+.inventory-slot.drag-source { opacity: .45; outline: 2px dashed #7dd3fc; }
+.slot-tooltip { pointer-events: none; }
+/* Desktop uses mouse controls only; no duplicate break/place buttons. */
+@media (hover:hover) and (pointer:fine) {
+  #touch-controls { display:none !important; }
+  #block-panel { display:none !important; }
+  #inventory-panel:not([hidden]) { top: 44px; max-height: calc(100% - 125px); }
+}
+/* Mobile controls are anchored to opposite bottom corners and never overlap the hotbar. */
+@media (pointer:coarse), (hover:none), (max-width:700px) {
+  #touch-controls {
+    display:block !important;
+    position:absolute;
+    left:0; right:0; bottom:calc(7px + env(safe-area-inset-bottom, 0px));
+    height:54px; z-index:35; pointer-events:none;
+  }
+  #touch-controls .move-controls { position:absolute; left:max(8px, env(safe-area-inset-left, 0px)); right:auto; bottom:0; display:flex; flex-direction:row; gap:6px; pointer-events:auto; }
+  #touch-controls .action-controls { position:absolute; right:max(8px, env(safe-area-inset-right, 0px)); left:auto; bottom:0; display:flex; flex-direction:row; gap:5px; pointer-events:auto; }
+  #touch-controls button { width:46px; min-width:46px; height:48px; min-height:48px; padding:2px; font-size:20px; line-height:1; border-radius:9px; }
+  #touch-break-button, #touch-place-button { width:44px; min-width:44px !important; font-size:21px !important; white-space:nowrap; }
+  #jump-button { width:42px; min-width:42px; }
+  #help { max-width:56%; font-size:9px; padding:4px 6px; }
+  #hotbar { bottom:calc(62px + env(safe-area-inset-bottom, 0px)); gap:2px; padding:3px; }
+  #inventory-panel:not([hidden]) { top: max(38px, 5vh); max-height: calc(100% - 116px); width: calc(100vw - 14px); padding:7px; }
+  .inventory-grid { gap:3px; }
+  .inventory-grid .inventory-slot { min-width:0; min-height:0; }
+  .slot-tooltip { font-size:10px; max-width:120px; white-space:normal; text-align:center; }
+}
+@media (orientation:landscape) and (max-height:430px) {
+  #touch-controls { height:43px; bottom:calc(3px + env(safe-area-inset-bottom, 0px)); }
+  #touch-controls button { height:40px; min-height:40px; width:40px; min-width:40px; font-size:18px; }
+  #touch-break-button, #touch-place-button { width:38px; min-width:38px !important; font-size:18px !important; }
+  #jump-button { width:38px; min-width:38px; }
+  #hotbar { bottom:calc(48px + env(safe-area-inset-bottom, 0px)); }
+  #inventory-panel:not([hidden]) { top:30px; max-height:calc(100% - 78px); }
+}
+
+
+/* v13: final inventory, player proportions, and non-overlapping device controls. */
+#block-panel { display:none !important; }
+#inventory-panel:not([hidden]) {
+  top: max(48px, 5vh);
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(520px, calc(100vw - 20px));
+  max-height: min(72vh, calc(100% - 110px));
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: #94a3b8 #1e293b;
+  padding: 10px;
+  box-sizing: border-box;
+}
+.inventory-heading { position: sticky; top: -10px; z-index: 5; padding: 3px 0 8px; background: rgba(15,23,42,.98); }
+.inventory-title { min-width: 0; flex-wrap: wrap; }
+.inventory-title span { white-space: normal; }
+.inventory-grid-scroll { max-height: min(48vh, 300px); overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: #94a3b8 #1e293b; }
+.inventory-grid { padding: 6px 2px; }
+.inventory-slot { user-select: none; -webkit-user-select: none; touch-action: pan-y; }
+.inventory-slot.drag-source { opacity: .45; outline: 2px dashed #7dd3fc; }
+.slot-tooltip { pointer-events: none; }
+/* Desktop uses mouse controls only; no duplicate break/place buttons. */
+@media (hover:hover) and (pointer:fine) {
+  #touch-controls { display:none !important; }
+  #block-panel { display:none !important; }
+  #inventory-panel:not([hidden]) { top: 44px; max-height: calc(100% - 125px); }
+}
+/* Mobile controls are anchored to opposite bottom corners and never overlap the hotbar. */
+@media (pointer:coarse), (hover:none), (max-width:700px) {
+  #touch-controls {
+    display:block !important;
+    position:absolute;
+    left:0; right:0; bottom:calc(7px + env(safe-area-inset-bottom, 0px));
+    height:54px; z-index:35; pointer-events:none;
+  }
+  #touch-controls .move-controls { position:absolute; left:max(8px, env(safe-area-inset-left, 0px)); right:auto; bottom:0; display:flex; flex-direction:row; gap:6px; pointer-events:auto; }
+  #touch-controls .action-controls { position:absolute; right:max(8px, env(safe-area-inset-right, 0px)); left:auto; bottom:0; display:flex; flex-direction:row; gap:5px; pointer-events:auto; }
+  #touch-controls button { width:46px; min-width:46px; height:48px; min-height:48px; padding:2px; font-size:20px; line-height:1; border-radius:9px; }
+  #touch-break-button, #touch-place-button { width:44px; min-width:44px !important; font-size:21px !important; white-space:nowrap; }
+  #jump-button { width:42px; min-width:42px; }
+  #help { max-width:56%; font-size:9px; padding:4px 6px; }
+  #hotbar { bottom:calc(62px + env(safe-area-inset-bottom, 0px)); gap:2px; padding:3px; }
+  #inventory-panel:not([hidden]) { top: max(38px, 5vh); max-height: calc(100% - 116px); width: calc(100vw - 14px); padding:7px; }
+  .inventory-grid { gap:3px; }
+  .inventory-grid .inventory-slot { min-width:0; min-height:0; }
+  .slot-tooltip { font-size:10px; max-width:120px; white-space:normal; text-align:center; }
+}
+@media (orientation:landscape) and (max-height:430px) {
+  #touch-controls { height:43px; bottom:calc(3px + env(safe-area-inset-bottom, 0px)); }
+  #touch-controls button { height:40px; min-height:40px; width:40px; min-width:40px; font-size:18px; }
+  #touch-break-button, #touch-place-button { width:38px; min-width:38px !important; font-size:18px !important; }
+  #jump-button { width:38px; min-width:38px; }
+  #hotbar { bottom:calc(48px + env(safe-area-inset-bottom, 0px)); }
+  #inventory-panel:not([hidden]) { top:30px; max-height:calc(100% - 78px); }
+}
+
+
+/* v14: lower desktop inventory, usable mouse-wheel scrolling, and larger world bounds. */
+@media (hover:hover) and (pointer:fine) {
+  #inventory-panel:not([hidden]) {
+    top: 92px;
+    max-height: calc(100% - 145px);
+  }
+  .inventory-grid-scroll {
+    max-height: 145px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: #94a3b8 #1e293b;
+  }
+}
+.inventory-grid-scroll {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: #94a3b8 #1e293b;
+}

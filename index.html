@@ -7,7 +7,7 @@
   <meta name="description" content="Minecraft Web — a small block-based browser game">
   <title>Minecraft Web</title>
   <link rel="manifest" href="./manifest.json">
-  <link rel="stylesheet" href="./style.css?v=11">
+  <link rel="stylesheet" href="./style.css?v=14">
 </head>
 <body>
   <section id="rotate-screen" aria-live="polite">
@@ -52,14 +52,14 @@
         <button id="right-button" type="button" aria-label="حرکت به راست">→</button>
       </div>
       <div class="action-controls">
-        <button id="jump-button" type="button" aria-label="پرش">↑</button>
-        <button id="touch-break-button" type="button">شکستن ۱٫۵ث</button>
-        <button id="touch-place-button" type="button">قراردادن</button>
+        <button id="jump-button" type="button" aria-label="پرش" title="پرش">↑</button>
+        <button id="touch-break-button" type="button" aria-label="شکستن بلاک" title="شکستن بلاک">⛏</button>
+        <button id="touch-place-button" type="button" aria-label="قراردادن بلاک" title="قراردادن بلاک">▣</button>
       </div>
     </nav>
   </main>
-  <script src="./world.js?v=11"></script>
-  <script src="./script.js?v=11"></script>
+  <script src="./world.js?v=14"></script>
+  <script src="./script.js?v=14"></script>
   <script>
     if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
       window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(err => console.warn('Service worker registration failed:', err)));

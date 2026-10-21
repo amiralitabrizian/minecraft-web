@@ -46,7 +46,7 @@
       this.blocks.length = 0;
       this.blockMap.clear();
       // A long, flat ground made from independent 40x40 blocks.
-      for (let x = -20 * BLOCK_SIZE; x <= 100 * BLOCK_SIZE; x += BLOCK_SIZE) {
+      for (let x = -100 * BLOCK_SIZE; x <= 300 * BLOCK_SIZE; x += BLOCK_SIZE) {
         this.addBlock(x, 0, "grass");
         this.addBlock(x, BLOCK_SIZE, "dirt");
         this.addBlock(x, BLOCK_SIZE * 2, "dirt");

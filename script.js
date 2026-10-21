@@ -23,7 +23,7 @@
 
   const { World, BLOCK_SIZE, COLORS, rectanglesOverlap } = window.MinecraftWorld;
   const world = new World();
-  const player = { x: 80, y: -120, width: 28, height: 52, vx: 0, vy: 0, onGround: false };
+  const player = { x: 80, y: -120, width: 32, height: 72, vx: 0, vy: 0, onGround: false };
   const camera = { x: 0, y: 0 };
   const keys = { left: false, right: false };
   const touch = { left: false, right: false };
@@ -38,6 +38,11 @@
   const inventory = Array(36).fill(null);
   let selectedSlot = 0;
   let inventoryOpen = false;
+  let walkTime = 0;
+  let dragSourceIndex = null;
+  let dragStartPoint = null;
+  let pendingTouchMoveIndex = null;
+  let suppressSlotClick = false;
   const STACK_LIMIT = 64;
   const PLACEABLE_TYPES = new Set(["grass", "dirt", "stone", "wood", "leaves"]);
   const BREAK_DURATION_MS = 1500;
@@ -103,7 +108,7 @@
     const viewWidth = gameShell.clientWidth;
     // Keep the player in the visible camera area, while the camera can follow along the world.
     if (!Number.isFinite(player.x)) player.x = 80;
-    player.x = Math.max(-BLOCK_SIZE * 20, Math.min(player.x, BLOCK_SIZE * 100));
+    player.x = Math.max(-BLOCK_SIZE * 100, Math.min(player.x, BLOCK_SIZE * 300));
     if (viewWidth <= 0) player.x = 80;
   }
 
@@ -113,7 +118,7 @@
     camera.x = player.x + player.width / 2 - w * 0.45;
     // Ground is stored at world Y=0; offset the camera so it appears near the bottom of the screen.
     camera.y = -Math.floor(h * 0.72);
-    camera.x = Math.max(-BLOCK_SIZE * 20, Math.min(camera.x, BLOCK_SIZE * 100 - w));
+    camera.x = Math.max(-BLOCK_SIZE * 100, Math.min(camera.x, BLOCK_SIZE * 300 - w));
   }
 
   function jump(source) {
@@ -218,9 +223,89 @@
   }
 
   function typeName(type) {
-    return ({ grass: "چمن", dirt: "خاک", stone: "سنگ", wood: "چوب", leaves: "برگ", bedrock: "سنگ‌بستر" })[type] || type;
+    return ({
+      grass: "Grass Block / بلاک چمن", dirt: "Dirt / خاک", stone: "Stone / سنگ",
+      wood: "Wood / چوب", leaves: "Leaves / برگ", bedrock: "Bedrock / سنگ‌بستر"
+    })[type] || String(type || "Unknown").replaceAll("_", " ");
   }
 
+  function slotMarkup(index, stack, selected = false) {
+    const name = stack ? typeName(stack.type) : "Empty / خالی";
+    return `<span class="slot-number">${index + 1}</span>${stack ? `<span class="slot-icon ${stack.type}"></span><span class="slot-count">${stack.count}</span>` : ""}<span class="slot-tooltip">${name}</span>`;
+  }
+
+  function swapSlots(a, b) {
+    if (a === b || a == null || b == null || a < 0 || b < 0 || a >= inventory.length || b >= inventory.length) return;
+    const temp = inventory[a]; inventory[a] = inventory[b]; inventory[b] = temp;
+    if (a < 9) selectedSlot = a;
+    else if (b < 9) selectedSlot = b;
+    renderInventory();
+    setStatus(inventory[selectedSlot] ? `Selected: ${typeName(inventory[selectedSlot].type)}` : "Inventory slots swapped");
+  }
+
+  function attachSlotInteractions(slot, index) {
+    slot.dataset.slotIndex = String(index);
+    slot.draggable = false;
+    slot.addEventListener("pointerdown", event => {
+      if (event.button !== undefined && event.button !== 0) return;
+      dragSourceIndex = index;
+      dragStartPoint = { x: event.clientX, y: event.clientY };
+      slot.classList.add("drag-source");
+    });
+    slot.addEventListener("click", event => {
+      if (suppressSlotClick) { event.preventDefault(); event.stopPropagation(); return; }
+      if (pendingTouchMoveIndex !== null && pendingTouchMoveIndex !== index) {
+        const source = pendingTouchMoveIndex;
+        pendingTouchMoveIndex = null;
+        swapSlots(source, index);
+        setStatus("Inventory items moved");
+        return;
+      }
+      if (index >= 9 && inventory[index]) {
+        // On touch screens, tap an item and then its destination to move it reliably.
+        if (matchMedia("(pointer: coarse)").matches || navigator.maxTouchPoints > 0) {
+          pendingTouchMoveIndex = index;
+          setStatus(`Selected ${typeName(inventory[index].type)}. Tap a destination slot.`);
+        } else {
+          swapSlots(index, selectedSlot);
+        }
+      } else if (index < 9) {
+        selectedSlot = index;
+        renderInventory();
+        setStatus(inventory[index] ? `Selected: ${typeName(inventory[index].type)} ×${inventory[index].count}` : "Empty hotbar slot");
+      } else {
+        pendingTouchMoveIndex = index;
+        setStatus("Empty inventory slot selected. Tap another slot to move here.");
+      }
+    });
+  }
+
+  // Resolve drag destinations globally so pointer-up works even when the browser
+  // reports the original slot as the event target. This supports mouse and touch.
+  document.addEventListener("pointerup", event => {
+    if (dragSourceIndex === null) return;
+    const source = dragSourceIndex;
+    const start = dragStartPoint;
+    dragSourceIndex = null;
+    dragStartPoint = null;
+    document.querySelectorAll(".drag-source").forEach(el => el.classList.remove("drag-source"));
+    const targetElement = document.elementFromPoint(event.clientX, event.clientY)?.closest?.(".inventory-slot");
+    const target = targetElement && targetElement.dataset.slotIndex !== undefined ? Number(targetElement.dataset.slotIndex) : null;
+    const moved = start && Math.hypot(event.clientX - start.x, event.clientY - start.y) > 7;
+    if (moved && target !== null && target !== source) {
+      event.preventDefault();
+      suppressSlotClick = true;
+      pendingTouchMoveIndex = null;
+      swapSlots(source, target);
+      setStatus("Inventory items moved");
+      setTimeout(() => { suppressSlotClick = false; }, 80);
+    }
+  }, true);
+  document.addEventListener("pointercancel", () => {
+    dragSourceIndex = null;
+    dragStartPoint = null;
+    document.querySelectorAll(".drag-source").forEach(el => el.classList.remove("drag-source"));
+  });
 
   function addItem(type, amount = 1) {
     let remaining = amount;
@@ -263,30 +348,27 @@
       const slot = document.createElement("button");
       slot.type = "button";
       slot.className = "inventory-slot" + (selectedSlot === i ? " selected" : "");
-      slot.setAttribute("aria-label", `خانه ${i + 1}${inventory[i] ? `، ${typeName(inventory[i].type)}، تعداد ${inventory[i].count}` : "، خالی"}`);
-      slot.innerHTML = `<span class="slot-number">${i + 1}</span>${inventory[i] ? `<span class="slot-icon ${inventory[i].type}"></span><span class="slot-count">${inventory[i].count}</span>` : ""}`;
-      slot.addEventListener("click", () => { selectedSlot = i; renderInventory(); setStatus(inventory[i] ? `انتخاب شد: ${typeName(inventory[i].type)} ×${inventory[i].count}` : "این خانه خالی است"); });
+      slot.setAttribute("aria-label", `Slot ${i + 1}: ${inventory[i] ? `${typeName(inventory[i].type)}, ${inventory[i].count}` : "empty"}`);
+      slot.title = inventory[i] ? `${typeName(inventory[i].type)} ×${inventory[i].count}` : "Empty slot";
+      slot.innerHTML = slotMarkup(i, inventory[i], selectedSlot === i);
+      attachSlotInteractions(slot, i);
       hotbarElement.appendChild(slot);
     }
-    if (inventoryElement) {
-      inventoryElement.hidden = !inventoryOpen;
-      if (inventoryOpen) {
-        inventoryElement.innerHTML = '<div class="inventory-heading"><div class="inventory-title">Inventory — برای انتخاب، روی خانه بزن</div><button type="button" id="inventory-close">بستن ✕</button></div><div class="inventory-grid"></div>';
-        inventoryElement.querySelector("#inventory-close").addEventListener("click", () => { inventoryOpen = false; renderInventory(); });
-        const grid = inventoryElement.querySelector(".inventory-grid");
-        for (let i = 9; i < 36; i++) {
-          const slot = document.createElement("button");
-          slot.type = "button"; slot.className = "inventory-slot";
-          slot.innerHTML = `<span class="slot-number">${i + 1}</span>${inventory[i] ? `<span class="slot-icon ${inventory[i].type}"></span><span class="slot-count">${inventory[i].count}</span>` : ""}`;
-          slot.addEventListener("click", () => {
-            if (inventory[i]) {
-              const old = inventory[selectedSlot]; inventory[selectedSlot] = inventory[i]; inventory[i] = old;
-              selectedSlot = Math.min(selectedSlot, 8); renderInventory();
-            }
-          });
-          grid.appendChild(slot);
-        }
-      }
+    if (!inventoryElement) return;
+    inventoryElement.hidden = !inventoryOpen;
+    if (!inventoryOpen) return;
+    inventoryElement.innerHTML = '<div class="inventory-heading"><div class="inventory-title">Inventory <span>Drag or tap an item, then its destination</span></div><button type="button" id="inventory-close">✕</button></div><div class="inventory-grid-scroll"><div class="inventory-grid"></div></div>';
+    inventoryElement.querySelector("#inventory-close").addEventListener("click", () => { inventoryOpen = false; renderInventory(); });
+    const grid = inventoryElement.querySelector(".inventory-grid");
+    for (let i = 9; i < 36; i++) {
+      const slot = document.createElement("button");
+      slot.type = "button";
+      slot.className = "inventory-slot";
+      slot.setAttribute("aria-label", `Inventory slot ${i + 1}: ${inventory[i] ? `${typeName(inventory[i].type)}, ${inventory[i].count}` : "empty"}`);
+      slot.title = inventory[i] ? `${typeName(inventory[i].type)} ×${inventory[i].count}` : "Empty slot";
+      slot.innerHTML = slotMarkup(i, inventory[i]);
+      attachSlotInteractions(slot, i);
+      grid.appendChild(slot);
     }
   }
 
@@ -466,6 +548,7 @@
   function update(dt) {
     const direction = (keys.left || touch.left ? -1 : 0) + (keys.right || touch.right ? 1 : 0);
     player.vx = direction * MOVE_SPEED;
+    if (direction !== 0 && player.onGround) walkTime += dt * 10;
 
     // Horizontal movement and collision against individual blocks.
     player.x += player.vx * dt;
@@ -581,33 +664,60 @@
     for (const block of world.blocks) drawBlock(block, width, height);
     drawDrops();
 
-    // Pixel-art player with hair, eyes, nose, smile, shirt seams and shoes.
+    // Pixel-art player adapted directly from player_draw.py (32x72 proportions).
     const px = Math.round(player.x - camera.x), py = Math.round(player.y - camera.y);
-    // Soft shadow
-    ctx.fillStyle = "rgba(20,35,25,.22)";
-    ctx.beginPath(); ctx.ellipse(px + player.width / 2, py + player.height + 2, 18, 4, 0, 0, Math.PI * 2); ctx.fill();
-    // Legs and shoes
-    ctx.fillStyle = "#29384f";
-    ctx.fillRect(px + 4, py + 35, 9, 13); ctx.fillRect(px + player.width - 13, py + 35, 9, 13);
-    ctx.fillStyle = "#202631";
-    ctx.fillRect(px + 2, py + 47, 12, 5); ctx.fillRect(px + player.width - 14, py + 47, 12, 5);
-    // Shirt and sleeves
-    ctx.fillStyle = "#2874c7"; ctx.fillRect(px + 3, py + 20, player.width - 6, 17);
-    ctx.fillStyle = "#174d91"; ctx.fillRect(px + 1, py + 22, 5, 12); ctx.fillRect(px + player.width - 6, py + 22, 5, 12);
-    ctx.fillStyle = "#77c5ff"; ctx.fillRect(px + 7, py + 22, 3, 12); ctx.fillRect(px + player.width - 10, py + 22, 3, 12);
-    // Neck and face
-    ctx.fillStyle = "#dca47f"; ctx.fillRect(px + 10, py + 17, 8, 6);
-    ctx.fillStyle = "#f1c39e"; ctx.fillRect(px + 4, py + 5, player.width - 8, 16);
-    // Hair fringe and side hair
-    ctx.fillStyle = "#4b2e20";
-    ctx.fillRect(px + 3, py + 2, player.width - 6, 6);
-    ctx.fillRect(px + 3, py + 6, 4, 8); ctx.fillRect(px + player.width - 7, py + 6, 4, 8);
-    ctx.fillStyle = "#68402a"; ctx.fillRect(px + 9, py + 3, 8, 3);
-    // Eyes with tiny highlights, nose and a small smile
-    ctx.fillStyle = "#ffffff"; ctx.fillRect(px + 7, py + 9, 5, 5); ctx.fillRect(px + player.width - 12, py + 9, 5, 5);
-    ctx.fillStyle = "#263447"; ctx.fillRect(px + 9, py + 10, 2, 4); ctx.fillRect(px + player.width - 10, py + 10, 2, 4);
-    ctx.fillStyle = "#c58b69"; ctx.fillRect(px + player.width / 2 - 1, py + 13, 3, 3);
-    ctx.fillStyle = "#8d4d43"; ctx.fillRect(px + 10, py + 17, 8, 2);
+    const moving = Math.abs(player.vx) > 1 && player.onGround;
+    const swing = moving ? Math.sin(walkTime) * 4 : 0;
+    const outline = "#181b22", skin = "#e0b891", skinDark = "#be916e";
+    const hair = "#342218", hairLight = "#533523";
+    const shirt = "#3773cd", shirtLight = "#5291e1", shirtDark = "#2852a0";
+    const pants = "#233773", pantsLight = "#324891", shoes = "#1c1c20";
+    const faceRight = player.vx >= 0;
+    ctx.fillStyle = "rgba(45,45,45,.8)";
+    ctx.beginPath(); ctx.ellipse(px + 16, py + 71, 15, 3.5, 0, 0, Math.PI * 2); ctx.fill();
+    // Legs and shoes use the same offsets and swing as the Pygame renderer.
+    const leftLegY = py + 55 - Math.round(swing), rightLegY = py + 55 + Math.round(swing);
+    ctx.fillStyle = outline;
+    ctx.fillRect(px + 4, leftLegY - 1, 12, 16); ctx.fillRect(px + 16, rightLegY - 1, 12, 16);
+    ctx.fillStyle = pants;
+    ctx.fillRect(px + 5, leftLegY, 10, 14); ctx.fillRect(px + 17, rightLegY, 10, 14);
+    ctx.fillStyle = pantsLight;
+    ctx.fillRect(px + 7, leftLegY, 4, 10); ctx.fillRect(px + 19, rightLegY, 4, 10);
+    ctx.fillStyle = outline;
+    ctx.fillRect(px + 3, py + 66 - Math.round(swing), 13, 5);
+    ctx.fillRect(px + 16, py + 66 + Math.round(swing), 13, 5);
+    ctx.fillStyle = shoes;
+    ctx.fillRect(px + 5, py + 66 - Math.round(swing), 10, 3);
+    ctx.fillRect(px + 17, py + 66 + Math.round(swing), 10, 3);
+    // Torso, belt, arms and hands.
+    ctx.fillStyle = outline; ctx.fillRect(px + 5, py + 28, 22, 30);
+    ctx.fillStyle = shirt; ctx.fillRect(px + 7, py + 30, 18, 26);
+    ctx.fillStyle = shirtLight; ctx.fillRect(px + 9, py + 32, 4, 17);
+    ctx.fillStyle = shirtDark; ctx.fillRect(px + 7, py + 50, 18, 6);
+    ctx.fillStyle = "#1c2337"; ctx.fillRect(px + 7, py + 48, 18, 3);
+    ctx.fillStyle = "#e1be50"; ctx.fillRect(px + 15, py + 49, 4, 4);
+    const armSwing = swing * .8;
+    ctx.fillStyle = outline;
+    ctx.fillRect(px - 1, py + 29 + armSwing, 8, 26); ctx.fillRect(px + 25, py + 29 - armSwing, 8, 26);
+    ctx.fillStyle = skin;
+    ctx.fillRect(px, py + 30 + armSwing, 6, 24); ctx.fillRect(px + 26, py + 30 - armSwing, 6, 24);
+    ctx.fillStyle = skinDark;
+    ctx.fillRect(px, py + 47 + armSwing, 6, 7); ctx.fillRect(px + 26, py + 47 - armSwing, 6, 7);
+    // Neck, head outline, skin, ears and hair.
+    ctx.fillStyle = outline; ctx.fillRect(px + 11, py + 24, 10, 8);
+    ctx.fillStyle = skin; ctx.fillRect(px + 12, py + 25, 8, 7);
+    const hx = px + 2, hy = py + 2;
+    ctx.fillStyle = outline; ctx.fillRect(hx - 1, hy - 1, 26, 27);
+    ctx.fillStyle = skin; ctx.fillRect(hx, hy, 24, 25);
+    ctx.fillStyle = skinDark; ctx.fillRect(hx - 3, hy + 12, 4, 7); ctx.fillRect(hx + 23, hy + 12, 4, 7);
+    ctx.fillStyle = hair; ctx.fillRect(hx, hy, 24, 7); ctx.fillRect(hx, hy + 5, 6, 12); ctx.fillRect(hx + 18, hy + 5, 6, 9);
+    ctx.fillStyle = hairLight; ctx.fillRect(hx + 4, hy + 2, 5, 3); ctx.fillRect(hx + 7, hy + 6, 4, 4);
+    // Eyes follow facing direction, matching the original pixel-art face.
+    const nearEye = hx + (faceRight ? 16 : 4), farEye = hx + (faceRight ? 20 : 1), eyeY = hy + 13;
+    ctx.fillStyle = "#f8f8f5"; ctx.fillRect(nearEye - 1, eyeY - 1, 5, 5); ctx.fillRect(farEye - 1, eyeY, 4, 4);
+    ctx.fillStyle = "#121212"; ctx.fillRect(nearEye + (faceRight ? 2 : 0), eyeY, 3, 3); ctx.fillRect(farEye + (faceRight ? 1 : 0), eyeY + 1, 2, 2);
+    ctx.fillStyle = skinDark; ctx.fillRect(hx + (faceRight ? 21 : 0), hy + 17, 3, 3);
+    ctx.fillStyle = "#693737"; ctx.fillRect(hx + 9, hy + 21, 7, 2);
 
     // Small crosshair at the last selected/tapped world position.
     if (pointerWorld) {
@@ -648,6 +758,28 @@
   });
   window.addEventListener("pointercancel", () => cancelBreaking(true));
   canvas.addEventListener("contextmenu", event => event.preventDefault());
+
+  // Mouse wheel: scroll the inventory grid while the pointer is over the inventory;
+  // otherwise cycle through the nine hotbar slots, just like a sandbox game.
+  window.addEventListener("wheel", event => {
+    const target = event.target;
+    if (target && target.closest && target.closest("#inventory-panel")) {
+      const scroller = inventoryElement && inventoryElement.querySelector(".inventory-grid-scroll");
+      if (scroller) {
+        event.preventDefault();
+        scroller.scrollTop += event.deltaY;
+      }
+      return;
+    }
+    if (target && target.closest && target.closest("#game-canvas, #hotbar")) {
+      event.preventDefault();
+      const direction = event.deltaY > 0 ? 1 : -1;
+      selectedSlot = (selectedSlot + direction + 9) % 9;
+      renderInventory();
+      const stack = inventory[selectedSlot];
+      setStatus(stack ? `Selected: ${typeName(stack.type)} ×${stack.count}` : `Hotbar slot ${selectedSlot + 1} is empty`);
+    }
+  }, { passive: false });
   window.addEventListener("keydown", keyDown);
   window.addEventListener("keyup", keyUp);
   window.addEventListener("blur", releaseInputs);

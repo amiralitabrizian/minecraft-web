@@ -1,56 +1,60 @@
-# Minecraft Web
+# Minecraft Web — Drop, Inventory & Hotbar
 
-A 2D block-based sandbox game built with HTML, CSS, and JavaScript.
+A 2D block-based browser game built with HTML, CSS, and JavaScript. This project is separate from the original Python/Pygame Minecraft2D project; the original game is used as a reference for gameplay and visual behavior, while browser-specific functionality is implemented for desktop and mobile devices.
 
-## About the Project
+## Current Features
 
-Minecraft Web is a browser-based game project inspired by 2D sandbox games. The goal is to create a playable experience on both desktop computers and mobile devices.
+- Player movement and jumping
+- Block breaking and placement
+- Dropped blocks appear in the world and can be collected
+- 36-slot inventory and 9-slot hotbar
+- Stack counts, with a limit of 64 items per stack
+- Select hotbar slots with mouse, touch, or number keys 1–9
+- Move items between inventory and hotbar using mouse drag-and-drop or tap-to-select and tap-to-move on touch screens
+- Scrollable inventory panel positioned higher on the screen
+- Item names shown on slot hover/focus and above the selected hotbar slot
+- Player sprite proportions, clothing, and walking animation adapted from the original Pygame player renderer
+- Desktop keyboard/mouse controls and mobile touch controls
 
-This project is separate from the original Python/Pygame version of Minecraft2D. The original project can be used as a reference for gameplay logic, while web-specific features are implemented using JavaScript, HTML, and CSS.
+## Desktop Controls
 
-## Current Development Stage
+- **A / D** or **Arrow Keys** — Move
+- **Space** or **Arrow Up** — Jump
+- **Hold left mouse button** — Break a block (mining timer applies)
+- **Right-click** — Place the selected block next to a valid target
+- **E** — Open or close the inventory
+- **1–9** — Select a hotbar slot
+- **Q** — Place the selected block near the current target
 
-The current development stage focuses on block interactions, item drops, inventory management, and the hotbar.
+## Mobile Controls
 
-Planned and implemented features should be verified in the running game before being considered complete.
+- Rotate the phone to landscape orientation.
+- Use the on-screen left/right and jump buttons to move.
+- Tap a block to select it, then use the break button.
+- Dropped items are collected automatically when the player gets close.
+- Tap the hotbar to select an item. Open Inventory to move items between slots; touch and drag between slots.
 
-## Project Structure
+## Project Files
 
-- `index.html` — Main game page.
-- `style.css` — Game layout and visual styling.
-- `script.js` — Main game logic and player interactions.
-- `world.js` — World and block management.
-- `manifest.json` — Web app configuration.
-- `sw.js` — Service worker for caching and offline support.
-- `README.md` — Project documentation.
+- `index.html` — Game page and controls
+- `style.css` — Layout, responsive styles, inventory and tooltips
+- `script.js` — Game logic, player rendering, drops, inventory and hotbar
+- `world.js` — World and block management
+- `manifest.json` — Web app metadata
+- `sw.js` — Service worker and cache versioning
 
-## Controls
+## Run Locally
 
-### Desktop
+Open `index.html` through a local development server. In PyCharm, use **Open in Browser**. A service worker requires HTTPS or localhost.
 
-- **A / D** or **Arrow Keys** — Move.
-- **Space** — Jump.
-- **Mouse** — Interact with blocks.
-- **Number Keys 1–9** — Select a hotbar slot.
-- **E** — Open or close the inventory.
+## Related Project
 
-### Mobile
+Original Python/Pygame project: https://github.com/amiralitabrizian/Minecraft2D
 
-The game is designed to support touch controls and a mobile-friendly layout. Touch interactions and landscape orientation should be tested on the target device.
+## Developer
 
-## Technologies
+Developed by Amir Ali Tabrizian.
 
-- HTML5
-- CSS3
-- JavaScript
-- Git and GitHub Pages
+## Testing Notes
 
-## Running the Game
-
-Open `index.html` in a compatible browser or run the project using a local development server.
-
-For GitHub Pages deployment, configure the repository to publish the correct branch and root directory.
-
-## Development Goals
-
-- Improve desktop and mobile controls
+This update includes inventory drag-and-drop, a scrollable inventory panel, item-name tooltips, and a walking animation adapted from the original Pygame player renderer. Please test on desktop and on a real mobile device after deployment; mobile behavior has not been physically verified in this build.
