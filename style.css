@@ -423,3 +423,105 @@ body.needs-landscape #rotate-screen { display:flex; }
   scrollbar-width: thin;
   scrollbar-color: #94a3b8 #1e293b;
 }
+
+
+/* v15: mobile inventory sits lower, above the hotbar and touch buttons. */
+@media (pointer: coarse), (hover: none), (max-width: 700px) {
+  #inventory-panel:not([hidden]) {
+    top: auto;
+    bottom: calc(98px + env(safe-area-inset-bottom, 0px));
+    max-height: calc(100% - 125px);
+    width: calc(100vw - 14px);
+    z-index: 45;
+  }
+  #inventory-panel .inventory-heading {
+    position: sticky;
+    top: -3px;
+  }
+  #touch-break-button, #touch-place-button {
+    width: 52px;
+    min-width: 52px !important;
+    height: 48px;
+    min-height: 48px;
+    font-size: 22px !important;
+  }
+}
+@media (orientation: landscape) and (max-height: 430px) {
+  #inventory-panel:not([hidden]) {
+    bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+    max-height: calc(100% - 104px);
+  }
+  #touch-break-button, #touch-place-button {
+    width: 48px;
+    min-width: 48px !important;
+    height: 42px;
+    min-height: 42px;
+    font-size: 20px !important;
+  }
+}
+
+
+/* v16: keep the mobile inventory near the bottom without covering game controls. */
+@media (pointer: coarse), (hover: none), (max-width: 700px) {
+  #inventory-panel:not([hidden]) {
+    top: auto !important;
+    bottom: calc(92px + env(safe-area-inset-bottom, 0px)) !important;
+    left: 7px;
+    right: 7px;
+    width: auto !important;
+    max-height: min(38vh, 190px) !important;
+    padding: 6px;
+    overflow: hidden;
+    z-index: 18 !important;
+  }
+
+  #inventory-panel .inventory-heading {
+    top: 0;
+    padding: 2px 0 5px;
+    gap: 6px;
+  }
+
+  #inventory-panel .inventory-title {
+    font-size: 12px;
+    line-height: 1.3;
+  }
+
+  #inventory-panel .inventory-title span {
+    display: none;
+  }
+
+  #inventory-panel .inventory-grid-scroll {
+    max-height: min(27vh, 128px) !important;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  #inventory-panel .inventory-grid {
+    grid-template-columns: repeat(9, minmax(0, 1fr));
+    gap: 3px;
+    padding: 3px 1px;
+  }
+
+  #inventory-panel .inventory-grid .inventory-slot {
+    width: 100%;
+    min-width: 0;
+    min-height: 0;
+    aspect-ratio: 1;
+  }
+
+  #touch-controls {
+    z-index: 25;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 430px) and (pointer: coarse) {
+  #inventory-panel:not([hidden]) {
+    bottom: calc(88px + env(safe-area-inset-bottom, 0px)) !important;
+    max-height: 39vh !important;
+  }
+
+  #inventory-panel .inventory-grid-scroll {
+    max-height: 26vh !important;
+  }
+}

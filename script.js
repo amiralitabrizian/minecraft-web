@@ -45,7 +45,13 @@
   let suppressSlotClick = false;
   const STACK_LIMIT = 64;
   const PLACEABLE_TYPES = new Set(["grass", "dirt", "stone", "wood", "leaves"]);
-  const BREAK_DURATION_MS = 1500;
+  // Match the original Pygame game's bare-hand mining times (block_data.py * 1.8).
+  const BREAK_DURATION_BY_TYPE = {
+    grass: 900, dirt: 900, stone: 2700, wood: 1800, leaves: 540, bedrock: Infinity
+  };
+  function breakDurationFor(block) {
+    return BREAK_DURATION_BY_TYPE[block && block.type] ?? 1500;
+  }
 
   const MOVE_SPEED = 260;
   const GRAVITY = 1500;
@@ -192,7 +198,7 @@
     pointerWorld = screenToWorld(event);
     const block = blockAtPoint(pointerWorld);
 
-    // Mouse: hold left button for 3 seconds to break; right-click places in one action.
+    // Mouse: hold left button for the block-specific mining duration; right-click places in one action.
     if (event.pointerType === "mouse") {
       event.preventDefault();
       if (event.button === 0) {
@@ -433,22 +439,25 @@
     if (!isInReach(target)) { setStatus("بلاک خارج از دسترس است"); return; }
     cancelBreaking(false);
     selectedBlock = target;
-    breakState = { target, startedAt: performance.now(), timer: null };
-    setStatus("در حال شکستن… ۱٫۵ ثانیه نگه دار");
+    const duration = breakDurationFor(target);
+    if (!Number.isFinite(duration)) { setStatus("این بلاک قابل شکستن نیست"); return; }
+    breakState = { target, startedAt: performance.now(), duration, timer: null };
+    setStatus(`در حال شکستن ${typeName(target.type)}… دکمه را ${(duration / 1000).toLocaleString("fa-IR", { maximumFractionDigits: 2 })} ثانیه نگه دار`);
     const state = breakState;
     state.timer = window.setTimeout(() => {
       if (breakState !== state) return;
       breakState = null;
       breakSelectedBlock(target);
-    }, BREAK_DURATION_MS);
+    }, duration);
     render();
   }
 
   function cancelBreaking(showMessage = false) {
     if (!breakState) return;
+    const duration = breakState.duration;
     window.clearTimeout(breakState.timer);
     breakState = null;
-    if (showMessage) setStatus("شکستن لغو شد؛ دکمه را ۱٫۵ ثانیه نگه دار");
+    if (showMessage) setStatus(`شکستن لغو شد؛ دکمه را ${(duration / 1000).toLocaleString("fa-IR", { maximumFractionDigits: 2 })} ثانیه نگه دار`);
     render();
   }
 
@@ -463,7 +472,7 @@
     const stop = () => {
       if (breakState) {
         const elapsed = performance.now() - breakState.startedAt;
-        if (elapsed < BREAK_DURATION_MS) cancelBreaking(true);
+        if (elapsed < breakState.duration) cancelBreaking(true);
       }
     };
     button.addEventListener("pointerup", stop);
@@ -631,7 +640,7 @@
       ctx.lineWidth = 1;
     }
     if (breakState && breakState.target === block) {
-      const progress = Math.min(1, (performance.now() - breakState.startedAt) / BREAK_DURATION_MS);
+      const progress = Math.min(1, (performance.now() - breakState.startedAt) / breakState.duration);
       ctx.strokeStyle = "rgba(25,25,25,.95)";
       ctx.lineWidth = 2;
       ctx.beginPath();
@@ -746,14 +755,14 @@
   canvas.addEventListener("pointerup", event => {
     if (event.pointerType === "mouse" && event.button === 0 && breakState) {
       const elapsed = performance.now() - breakState.startedAt;
-      if (elapsed < BREAK_DURATION_MS) cancelBreaking(true);
+      if (elapsed < breakState.duration) cancelBreaking(true);
     }
   });
   canvas.addEventListener("pointercancel", () => cancelBreaking(true));
   window.addEventListener("pointerup", event => {
     if (event.pointerType === "mouse" && event.button === 0 && breakState) {
       const elapsed = performance.now() - breakState.startedAt;
-      if (elapsed < BREAK_DURATION_MS) cancelBreaking(true);
+      if (elapsed < breakState.duration) cancelBreaking(true);
     }
   });
   window.addEventListener("pointercancel", () => cancelBreaking(true));
