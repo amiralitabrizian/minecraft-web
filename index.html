@@ -7,13 +7,14 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <link rel="icon" type="image/png" sizes="32x32" href="./icons/favicon-32.png?v=18">
-  <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png?v=18">
-  <link rel="apple-touch-icon" sizes="180x180" href="./icons/apple-touch-icon.png?v=18">
+  <link rel="shortcut icon" type="image/png" href="./icons/icon-192.png?v=19">
+  <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png?v=19">
+  <link rel="icon" type="image/png" sizes="32x32" href="./icons/favicon-32.png?v=19">
+  <link rel="apple-touch-icon" sizes="180x180" href="./icons/apple-touch-icon.png?v=19">
   <meta name="description" content="Minecraft Web — a small block-based browser game">
   <title>Minecraft Web</title>
-  <link rel="manifest" href="./manifest.json?v=18">
-  <link rel="stylesheet" href="./style.css?v=18">
+  <link rel="manifest" href="./manifest.json?v=19">
+  <link rel="stylesheet" href="./style.css?v=19">
 </head>
 <body>
   <section id="rotate-screen" aria-live="polite">
@@ -64,8 +65,8 @@
       </div>
     </nav>
   </main>
-  <script src="./world.js?v=18"></script>
-  <script src="./script.js?v=18"></script>
+  <script src="./world.js?v=19"></script>
+  <script src="./script.js?v=19"></script>
   <script>
     if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
       window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(err => console.warn('Service worker registration failed:', err)));

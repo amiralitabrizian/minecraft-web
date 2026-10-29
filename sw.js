@@ -1,14 +1,18 @@
 "use strict";
-const CACHE_NAME = "minecraft-web-v17";
+const CACHE_NAME = "minecraft-web-v19";
 const FILES_TO_CACHE = [
-  "./", "./index.html", "./style.css?v=17", "./world.js?v=17",
-  "./script.js?v=17", "./manifest.json?v=17",
-  "./icons/icon-192.png?v=17", "./icons/icon-512.png?v=17",
-  "./icons/icon-maskable-512.png?v=17"
+  "./", "./index.html", "./style.css?v=19", "./world.js?v=19",
+  "./script.js?v=19", "./manifest.json?v=19",
+  "./icons/favicon-32.png?v=19", "./icons/apple-touch-icon.png?v=19",
+  "./icons/icon-192.png?v=19", "./icons/icon-512.png?v=19",
+  "./icons/icon-maskable-512.png?v=19"
 ];
 self.addEventListener("install", event => {
-  event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(FILES_TO_CACHE)));
-  self.skipWaiting();
+  event.waitUntil((async () => {
+    const cache = await caches.open(CACHE_NAME);
+    await cache.addAll(FILES_TO_CACHE);
+    await self.skipWaiting();
+  })());
 });
 self.addEventListener("activate", event => {
   event.waitUntil((async () => {
@@ -22,22 +26,33 @@ self.addEventListener("fetch", event => {
   if (request.method !== "GET") return;
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
+  // Prefer the live page when online; use the cached page when offline.
+  if (request.mode === "navigate") {
+    event.respondWith((async () => {
+      try {
+        const response = await fetch(request);
+        if (response && response.ok) {
+          const cache = await caches.open(CACHE_NAME);
+          await cache.put("./index.html", response.clone());
+        }
+        return response;
+      } catch (_) {
+        return (await caches.match(request)) || (await caches.match("./index.html"));
+      }
+    })());
+    return;
+  }
   event.respondWith((async () => {
     const cached = await caches.match(request);
     if (cached) return cached;
     try {
       const response = await fetch(request);
       if (response.ok) {
-        const copy = response.clone();
         const cache = await caches.open(CACHE_NAME);
-        cache.put(request, copy);
+        cache.put(request, response.clone());
       }
       return response;
     } catch (error) {
-      if (request.mode === "navigate") {
-        const fallback = await caches.match("./index.html");
-        if (fallback) return fallback;
-      }
       throw error;
     }
   })());

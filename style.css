@@ -560,3 +560,77 @@ body.needs-landscape #rotate-screen { display:flex; }
     max-height: calc(100% - 120px) !important;
   }
 }
+
+
+/* v19: clearer 1-9 hotbar and compact full inventory on mobile. */
+@media (pointer: coarse), (hover: none), (max-width: 700px) {
+  #hotbar {
+    gap: 4px !important;
+    padding: 5px !important;
+    bottom: calc(59px + env(safe-area-inset-bottom, 0px)) !important;
+    max-width: calc(100vw - 10px) !important;
+  }
+  #hotbar .inventory-slot {
+    flex: 1 1 0 !important;
+    width: auto !important;
+    min-width: 0 !important;
+    height: clamp(36px, 9vh, 43px) !important;
+    min-height: 36px !important;
+    position: relative;
+    border-radius: 5px;
+  }
+  #hotbar .slot-number {
+    top: 2px !important; left: 3px !important;
+    font-size: 11px !important; font-weight: 800 !important;
+    text-shadow: 0 1px 2px #000;
+  }
+  #hotbar .slot-count { font-size: 11px !important; font-weight: 700; }
+  #hotbar .slot-icon { width: 56% !important; height: 56% !important; }
+  #inventory-panel:not([hidden]) {
+    left: 8px !important; right: 8px !important;
+    bottom: calc(111px + env(safe-area-inset-bottom, 0px)) !important;
+    top: auto !important; transform: none !important;
+    width: auto !important;
+    max-height: min(44vh, calc(100% - 165px)) !important;
+    overflow: hidden !important;
+    padding: 7px !important;
+    background: rgba(15, 23, 42, .97) !important;
+    border: 1px solid #64748b;
+    box-shadow: 0 5px 20px rgba(0,0,0,.35);
+  }
+  #inventory-panel .inventory-heading {
+    position: sticky; top: 0; z-index: 6;
+    padding: 2px 0 6px !important;
+    background: rgba(15, 23, 42, .99);
+  }
+  #inventory-panel .inventory-grid-scroll {
+    max-height: min(29vh, 125px) !important;
+    overflow-y: auto !important; overflow-x: hidden !important;
+  }
+  #inventory-panel .inventory-grid {
+    grid-template-columns: repeat(9, minmax(0, 1fr)) !important;
+    gap: 3px !important; padding: 3px 1px !important;
+  }
+  #inventory-panel .inventory-grid .inventory-slot {
+    width: 100% !important; height: clamp(30px, 8vh, 39px) !important;
+    min-width: 0 !important; min-height: 30px !important;
+    aspect-ratio: auto !important; padding: 0 !important;
+  }
+  #inventory-panel .inventory-grid .slot-icon {
+    width: 48% !important; height: 48% !important;
+    left: 50% !important; top: 53% !important;
+    transform: translate(-50%, -50%) !important;
+  }
+  #inventory-panel .inventory-grid .slot-number { font-size: 9px !important; }
+  #inventory-panel .inventory-grid .slot-count { font-size: 10px !important; }
+}
+@media (orientation: landscape) and (max-height: 430px) {
+  #hotbar { bottom: calc(52px + env(safe-area-inset-bottom, 0px)) !important; }
+  #hotbar .inventory-slot { height: clamp(34px, 9vh, 39px) !important; min-height: 34px !important; }
+  #inventory-panel:not([hidden]) {
+    bottom: calc(101px + env(safe-area-inset-bottom, 0px)) !important;
+    max-height: min(43vh, calc(100% - 145px)) !important;
+  }
+  #inventory-panel .inventory-grid-scroll { max-height: min(27vh, 100px) !important; }
+  #inventory-panel .inventory-grid .inventory-slot { height: clamp(28px, 7.8vh, 34px) !important; min-height: 28px !important; }
+}
