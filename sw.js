@@ -1,5 +1,5 @@
 "use strict";
-const CACHE_NAME = "minecraft-web-v20";
+const CACHE_NAME = "minecraft-web-v21";
 const FILES_TO_CACHE = [
   "./", "./index.html", "./style.css", "./world.js", "./script.js", "./manifest.json",
   "./icons/favicon-32.png", "./icons/icon-192.png", "./icons/icon-512.png",

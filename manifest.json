@@ -3,7 +3,7 @@
   "name": "Minecraft2D Web",
   "short_name": "Minecraft2D",
   "description": "A 2D block-based Minecraft-style browser game.",
-  "start_url": "./?source=pwa",
+  "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "display_override": [
