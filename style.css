@@ -502,3 +502,61 @@ body.needs-landscape #rotate-screen { display:flex; }
   }
   #inventory-panel .inventory-grid-scroll { max-height: 28vh; }
 }
+
+
+/* v18: larger, centered mobile hotbar; full inventory stays clear of the bottom controls. */
+#hotbar { z-index: 32; }
+@media (pointer: coarse), (hover: none), (max-width: 700px) {
+  #hotbar {
+    left: 50% !important;
+    right: auto !important;
+    transform: translateX(-50%) !important;
+    bottom: calc(59px + env(safe-area-inset-bottom, 0px)) !important;
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    justify-content: center;
+    gap: 3px !important;
+    padding: 4px !important;
+    max-width: calc(100vw - 12px) !important;
+    width: max-content;
+    box-sizing: border-box;
+  }
+  #hotbar .inventory-slot {
+    flex: 0 1 clamp(30px, 8.4vw, 43px);
+    width: clamp(30px, 8.4vw, 43px) !important;
+    min-width: 0 !important;
+    height: clamp(34px, 9.2vw, 43px) !important;
+    min-height: 0 !important;
+    aspect-ratio: auto;
+    border-width: 2px;
+  }
+  #hotbar .slot-icon {
+    width: 58% !important;
+    height: 58% !important;
+    left: 50% !important;
+    top: 52% !important;
+    transform: translate(-50%, -50%);
+  }
+  #hotbar .slot-number { top: 0; left: 2px; font-size: 9px; line-height: 1; }
+  #hotbar .slot-count { right: 2px; bottom: 0; font-size: 11px; line-height: 1; }
+  #inventory-panel:not([hidden]) {
+    bottom: calc(112px + env(safe-area-inset-bottom, 0px)) !important;
+    max-height: min(52vh, calc(100% - 160px)) !important;
+  }
+}
+@media (orientation: landscape) and (max-height: 430px) {
+  #hotbar {
+    bottom: calc(49px + env(safe-area-inset-bottom, 0px)) !important;
+    gap: 2px !important;
+    padding: 3px !important;
+  }
+  #hotbar .inventory-slot {
+    flex-basis: clamp(31px, 5.1vw, 41px);
+    width: clamp(31px, 5.1vw, 41px) !important;
+    height: clamp(31px, 8.6vh, 38px) !important;
+  }
+  #inventory-panel:not([hidden]) {
+    bottom: calc(96px + env(safe-area-inset-bottom, 0px)) !important;
+    max-height: calc(100% - 120px) !important;
+  }
+}
