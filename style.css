@@ -461,21 +461,14 @@ body.needs-landscape #rotate-screen { display:flex; }
 }
 
 
-/* v21: keep the original inventory and hotbar sizes; only anchor the inventory lower on phones. */
+/* v23: move the existing 1–9 hotbar lower on mobile without changing slot sizes. */
 @media (pointer: coarse), (hover: none), (max-width: 700px) {
-  #inventory-panel:not([hidden]) {
-    top: auto !important;
-    bottom: calc(76px + env(safe-area-inset-bottom, 0px)) !important;
-    left: 50% !important;
-    transform: translateX(-50%);
-    max-height: calc(100% - 125px) !important;
-    width: min(390px, calc(100vw - 16px)) !important;
-    z-index: 45;
+  #hotbar {
+    bottom: calc(8px + env(safe-area-inset-bottom, 0px)) !important;
   }
 }
 @media (orientation: landscape) and (max-height: 430px) {
-  #inventory-panel:not([hidden]) {
-    bottom: calc(62px + env(safe-area-inset-bottom, 0px)) !important;
-    max-height: calc(100% - 90px) !important;
+  #hotbar {
+    bottom: calc(6px + env(safe-area-inset-bottom, 0px)) !important;
   }
 }
