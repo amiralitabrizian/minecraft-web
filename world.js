@@ -182,7 +182,7 @@
       }
       this.generateAround(aroundX);
     }
-    blocksInRect(left, top, right, bottom) {
+    blocksInRect(left, top, right, bottom, includeNonSolid = false) {
       const result = [];
       const startX = Math.floor(left / BLOCK_SIZE) * BLOCK_SIZE;
       const endX = Math.floor(right / BLOCK_SIZE) * BLOCK_SIZE;
@@ -191,7 +191,9 @@
       for (let y = startY; y <= endY; y += BLOCK_SIZE) {
         for (let x = startX; x <= endX; x += BLOCK_SIZE) {
           const block = this.getAt(x, y);
-          if (block && this.isSolid(block)) result.push(block);
+          // Physics queries stay solid-only. Rendering can explicitly include
+          // non-solid objects such as torches, which must remain visible.
+          if (block && (includeNonSolid || this.isSolid(block))) result.push(block);
         }
       }
       return result;

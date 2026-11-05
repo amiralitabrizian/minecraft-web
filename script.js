@@ -33,7 +33,13 @@
   const touchInteractButton = document.getElementById("touch-interact-button");
   const pauseMenuButton = document.getElementById("pause-menu-button");
   const menuSaveButton = document.getElementById("menu-save-button");
+  const menuSaveStatus = document.getElementById("menu-save-status");
   const soundToggleButton = document.getElementById("sound-toggle");
+  const aboutToggleButton = document.getElementById("about-toggle");
+  const aboutPanel = document.getElementById("about-panel");
+  const helpToggleButton = document.getElementById("help-toggle");
+  const mobileHelpPanel = document.getElementById("mobile-help-panel");
+  const mobileHelpCloseButton = document.getElementById("mobile-help-close");
 
   if (!canvas || !ctx || !window.MinecraftWorld || !window.MinecraftSystems) throw new Error("Game setup failed. Check index.html, world.js and survival.js.");
 
@@ -211,7 +217,8 @@
 
   function resizeCanvas() {
     const rect = gameShell.getBoundingClientRect();
-    dpr = Math.max(1, Math.min(window.devicePixelRatio || 1, 2));
+    const touchLike = navigator.maxTouchPoints > 0 || matchMedia("(pointer: coarse)").matches;
+    dpr = Math.max(1, Math.min(window.devicePixelRatio || 1, touchLike ? 1.5 : 2));
     canvas.width = Math.max(1, Math.round(rect.width * dpr));
     canvas.height = Math.max(1, Math.round(rect.height * dpr));
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -501,7 +508,7 @@
     document.querySelectorAll(".drag-source").forEach(el => el.classList.remove("drag-source"));
   });
 
-  function addItemPartial(type, amount = 1, durability = null) {
+  function addItemPartial(type, amount = 1, durability = null, rerender = true) {
     let remaining = Math.max(0, Math.floor(Number(amount) || 0));
     const tool = TOOL_INFO[type];
     if (tool) {
@@ -526,7 +533,7 @@
         }
       }
     }
-    renderInventory();
+    if (rerender) renderInventory();
     return Math.max(0, Math.floor(Number(amount) || 0)) - remaining;
   }
 
@@ -602,6 +609,7 @@
   }
 
   function updateDrops(dt) {
+    let inventoryChanged = false;
     for (let i = drops.length - 1; i >= 0; i--) {
       const drop = drops[i];
       drop.age += dt;
@@ -615,27 +623,131 @@
       const dx = player.x + player.width / 2 - (drop.x + 9);
       const dy = player.y + player.height / 2 - (drop.y + 9);
       if (player.alive && Math.hypot(dx, dy) < 58) {
-        const added = addItemPartial(drop.type, drop.count || 1, drop.durability ?? null);
-        if (added > 0) Sound.play("pickup");
+        // Do not rebuild the entire DOM inventory on every animation frame when
+        // the inventory is full. Batch the visual refresh after all drops update.
+        const added = addItemPartial(drop.type, drop.count || 1, drop.durability ?? null, false);
+        if (added > 0) { inventoryChanged = true; Sound.play("pickup"); }
         drop.count = Math.max(0, (drop.count || 1) - added);
         if (drop.count <= 0) {
           drops.splice(i, 1);
           setStatus(`${typeName(drop.type)} جمع شد و وارد Inventory شد`);
         } else if (added > 0) setStatus("Inventory جا ندارد؛ بخشی از آیتم جمع شد");
       }
+      // Remove abandoned drops after five minutes to keep long sessions light.
+      if (drop.age > 300) drops.splice(i, 1);
     }
+    if (inventoryChanged) renderInventory();
+  }
+
+  function drawItemSprite(type, size = 24) {
+    const scale = size / 32;
+    ctx.save();
+    ctx.scale(scale, scale);
+    ctx.imageSmoothingEnabled = false;
+    const isTool = /^(wooden|iron|golden|diamond)_(pickaxe|axe|sword)$/.test(type);
+    if (isTool) {
+      const material = type.startsWith("wooden_") ? "#b9824d" : type.startsWith("iron_") ? "#d5dce2" : type.startsWith("golden_") ? "#f7d34b" : "#55d6d3";
+      const dark = type.startsWith("wooden_") ? "#59391f" : type.startsWith("iron_") ? "#56616b" : type.startsWith("golden_") ? "#896318" : "#126d78";
+      // Dark outline and wooden grip.
+      ctx.strokeStyle = "#31251d"; ctx.lineWidth = 7; ctx.lineCap = "square";
+      ctx.beginPath(); ctx.moveTo(-10, 12); ctx.lineTo(10, -11); ctx.stroke();
+      ctx.strokeStyle = "#a87543"; ctx.lineWidth = 4;
+      ctx.beginPath(); ctx.moveTo(-10, 12); ctx.lineTo(10, -11); ctx.stroke();
+      ctx.strokeStyle = "rgba(255,225,178,.7)"; ctx.lineWidth = 1.2;
+      ctx.beginPath(); ctx.moveTo(-8, 9); ctx.lineTo(7, -9); ctx.stroke();
+      if (type.endsWith("pickaxe")) {
+        ctx.fillStyle = dark; ctx.beginPath(); ctx.moveTo(-14, -11); ctx.quadraticCurveTo(-4, -17, 1, -11); ctx.lineTo(11, -12); ctx.lineTo(14, -7); ctx.lineTo(2, -5); ctx.quadraticCurveTo(-4, -3, -9, -6); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = material; ctx.beginPath(); ctx.moveTo(-13, -12); ctx.quadraticCurveTo(-4, -16, 1, -10); ctx.lineTo(11, -11); ctx.lineTo(12, -8); ctx.lineTo(1, -7); ctx.quadraticCurveTo(-5, -5, -9, -8); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = "rgba(255,255,255,.55)"; ctx.fillRect(-7, -12, 7, 2);
+      } else if (type.endsWith("axe")) {
+        ctx.fillStyle = dark; ctx.beginPath(); ctx.moveTo(1, -15); ctx.lineTo(14, -13); ctx.lineTo(12, -2); ctx.lineTo(6, 2); ctx.lineTo(-1, -3); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = material; ctx.beginPath(); ctx.moveTo(2, -14); ctx.lineTo(12, -12); ctx.lineTo(10, -3); ctx.lineTo(5, -1); ctx.lineTo(0, -5); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = "rgba(255,255,255,.55)"; ctx.fillRect(4, -12, 6, 2);
+      } else {
+        ctx.fillStyle = dark; ctx.beginPath(); ctx.moveTo(-2, -12); ctx.lineTo(3, -15); ctx.lineTo(13, -4); ctx.lineTo(13, 4); ctx.lineTo(9, 8); ctx.lineTo(-1, -4); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = material; ctx.beginPath(); ctx.moveTo(0, -12); ctx.lineTo(3, -15); ctx.lineTo(11, -5); ctx.lineTo(10, 1); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = "rgba(255,255,255,.58)"; ctx.beginPath(); ctx.moveTo(2, -12); ctx.lineTo(4, -14); ctx.lineTo(12, -3); ctx.lineTo(11, 0); ctx.closePath(); ctx.fill();
+        ctx.strokeStyle = "#6d4a2b"; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(-5, -1); ctx.lineTo(2, 6); ctx.stroke();
+      }
+    } else if (type === "torch") {
+      ctx.fillStyle = "#4d2d19"; ctx.fillRect(-2.5, -1, 5, 17);
+      ctx.fillStyle = "#bd854a"; ctx.fillRect(-1.5, 0, 2, 14);
+      ctx.fillStyle = "#ef751c"; ctx.beginPath(); ctx.moveTo(-6, 1); ctx.quadraticCurveTo(-9, -9, 0, -15); ctx.quadraticCurveTo(10, -8, 5, 1); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = "#ffe78b"; ctx.beginPath(); ctx.moveTo(-2, 0); ctx.quadraticCurveTo(-4, -7, 1, -11); ctx.quadraticCurveTo(6, -4, 2, 1); ctx.closePath(); ctx.fill();
+    } else if (["coal", "iron", "gold", "diamond"].includes(type)) {
+      const palette = type === "coal" ? ["#4b5058", "#191d22", "#080a0d"] : type === "iron" ? ["#8e7969", "#e0c4a9", "#baa18d"] : type === "gold" ? ["#a87913", "#f4ce3d", "#fff1a2"] : ["#176f7a", "#57d7d1", "#c5ffff"];
+      ctx.fillStyle = "rgba(0,0,0,.35)"; ctx.fillRect(-12, -9, 24, 21);
+      ctx.fillStyle = palette[0]; ctx.fillRect(-12, -12, 23, 22);
+      ctx.fillStyle = palette[1]; ctx.fillRect(-9, -10, 17, 15);
+      ctx.fillStyle = palette[2]; ctx.fillRect(-6, -9, 6, 4); ctx.fillRect(3, -3, 5, 5);
+      ctx.strokeStyle = "rgba(255,255,255,.35)"; ctx.lineWidth = 1.2; ctx.strokeRect(-11.5, -11.5, 22, 21);
+    } else if (["grass", "dirt", "stone", "wood", "leaves", "leaf", "bedrock", "planks", "crafting_table", "furnace"].includes(type)) {
+      const palettes = {
+        grass: ["#8d5a32", "#68c943", "#3f8629"], dirt: ["#95603a", "#704329", "#bd8050"],
+        stone: ["#858b92", "#5f6670", "#b5bbc0"], wood: ["#956034", "#c18b50", "#684327"],
+        leaves: ["#2a7c32", "#49aa43", "#83d85c"], leaf: ["#2a7c32", "#49aa43", "#83d85c"],
+        bedrock: ["#282e37", "#414955", "#11151b"], planks: ["#95603a", "#c18a50", "#70482b"],
+        crafting_table: ["#87532f", "#c58a4e", "#5f391f"], furnace: ["#555b64", "#8a9098", "#20262e"]
+      };
+      const c = palettes[type];
+      ctx.fillStyle = "rgba(0,0,0,.28)"; ctx.fillRect(-12, -9, 24, 22);
+      ctx.fillStyle = c[0]; ctx.fillRect(-12, -12, 24, 24);
+      ctx.fillStyle = c[1]; ctx.fillRect(-11, -11, 22, type === "grass" ? 7 : 4);
+      ctx.fillStyle = c[2]; ctx.fillRect(-11, -3, 22, 13);
+      if (type === "grass") { ctx.fillStyle = "#8a5732"; ctx.fillRect(-11, -4, 22, 15); ctx.fillStyle = "#59bd39"; ctx.fillRect(-11,-11,22,6); }
+      if (type === "stone" || type === "bedrock") { ctx.fillStyle = c[1]; ctx.fillRect(-7,-6,4,3); ctx.fillRect(3,2,5,3); }
+      if (type === "wood" || type === "planks") { ctx.fillStyle = c[2]; ctx.fillRect(-6,-10,2,19); ctx.fillRect(2,-10,2,19); }
+      if (type === "crafting_table") { ctx.fillStyle = "#e6c18b"; ctx.fillRect(-5,-8,10,4); ctx.strokeStyle="#4c2d1b"; ctx.strokeRect(-8,-3,16,10); }
+      if (type === "furnace") { ctx.fillStyle="#141a20"; ctx.fillRect(-6,-1,12,10); ctx.fillStyle="#f68a24"; ctx.fillRect(-3,4,6,4); }
+      ctx.strokeStyle = "rgba(255,255,255,.26)"; ctx.lineWidth = 1; ctx.strokeRect(-11.5,-11.5,23,23);
+    } else if (type === "iron_ingot" || type === "gold_ingot") {
+      const gold = type === "gold_ingot";
+      ctx.fillStyle = gold ? "#a87912" : "#606a74";
+      ctx.beginPath(); ctx.moveTo(-13, -6); ctx.lineTo(8, -9); ctx.lineTo(14, -1); ctx.lineTo(9, 9); ctx.lineTo(-11, 7); ctx.lineTo(-15, 0); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = gold ? "#f6d84b" : "#d4dce2";
+      ctx.beginPath(); ctx.moveTo(-11, -5); ctx.lineTo(7, -7); ctx.lineTo(11, -1); ctx.lineTo(7, 5); ctx.lineTo(-9, 4); ctx.lineTo(-12, 0); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = "rgba(255,255,255,.65)"; ctx.fillRect(-8,-4,8,2);
+    } else if (type === "stick") {
+      ctx.strokeStyle="#52371f"; ctx.lineWidth=6; ctx.beginPath(); ctx.moveTo(-10,12); ctx.lineTo(10,-12); ctx.stroke();
+      ctx.strokeStyle="#c7955d"; ctx.lineWidth=3; ctx.beginPath(); ctx.moveTo(-10,11); ctx.lineTo(9,-12); ctx.stroke();
+    } else if (type === "apple") {
+      ctx.fillStyle="#8e1e1d"; ctx.beginPath(); ctx.arc(-4,0,9,0,Math.PI*2); ctx.arc(4,0,9,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle="#e33c35"; ctx.beginPath(); ctx.arc(-4,-2,7,0,Math.PI*2); ctx.arc(4,-2,7,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle="#6ca842"; ctx.beginPath(); ctx.ellipse(5,-12,5,2.7,-.35,0,Math.PI*2); ctx.fill();
+      ctx.strokeStyle="#57391e"; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(0,-8); ctx.lineTo(1,-14); ctx.stroke();
+    } else if (["meat", "mutton", "cooked_beef", "cooked_mutton", "zombie_meat"].includes(type)) {
+      const cooked = type.startsWith("cooked");
+      ctx.fillStyle = cooked ? "#572b22" : type === "zombie_meat" ? "#567347" : "#9f3545";
+      ctx.beginPath(); ctx.moveTo(-12,3); ctx.quadraticCurveTo(-14,-8,-5,-10); ctx.lineTo(6,-8); ctx.quadraticCurveTo(15,-3,11,7); ctx.quadraticCurveTo(1,14,-9,8); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = cooked ? "#bd7350" : type === "zombie_meat" ? "#a1b16a" : "#e9878a";
+      ctx.beginPath(); ctx.ellipse(-2,-3,7,4,-.2,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle="#eee0d0"; ctx.beginPath(); ctx.arc(10,8,3,0,Math.PI*2); ctx.fill();
+    } else if (type === "wool") {
+      ctx.fillStyle="#aeb5b6"; ctx.beginPath(); ctx.arc(-7,1,7,0,Math.PI*2); ctx.arc(0,-5,8,0,Math.PI*2); ctx.arc(8,1,7,0,Math.PI*2); ctx.arc(0,6,8,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle="#fffefa"; ctx.beginPath(); ctx.arc(-7,-1,5,0,Math.PI*2); ctx.arc(0,-7,6,0,Math.PI*2); ctx.arc(7,-1,5,0,Math.PI*2); ctx.arc(0,4,6,0,Math.PI*2); ctx.fill();
+    } else if (type === "bone") {
+      ctx.strokeStyle="#e8dfc8"; ctx.lineWidth=7; ctx.lineCap="round"; ctx.beginPath(); ctx.moveTo(-9,8); ctx.lineTo(8,-8); ctx.stroke();
+      ctx.fillStyle="#fff3dc"; ctx.beginPath(); ctx.arc(-11,7,4,0,Math.PI*2); ctx.arc(-6,12,4,0,Math.PI*2); ctx.arc(6,-12,4,0,Math.PI*2); ctx.arc(11,-7,4,0,Math.PI*2); ctx.fill();
+    } else {
+      ctx.fillStyle="#7e8792"; ctx.fillRect(-10,-10,20,20); ctx.fillStyle="#d5dee7"; ctx.fillRect(-8,-8,8,5);
+    }
+    ctx.restore();
   }
 
   function drawDrops() {
     for (const drop of drops) {
       const x = Math.round(drop.x - camera.x), y = Math.round(drop.y - camera.y);
-      if (x < -20 || x > gameShell.clientWidth + 20 || y < -20 || y > gameShell.clientHeight + 20) continue;
-      const colors = COLORS[drop.type] || COLORS.dirt;
-      ctx.save(); ctx.translate(x + 9, y + 9); ctx.rotate(Math.sin(drop.age * 5) * 0.12);
-      ctx.fillStyle = "rgba(0,0,0,.25)"; ctx.fillRect(-8, 3, 17, 17);
-      ctx.fillStyle = colors.side; ctx.fillRect(-8, -8, 16, 16);
-      ctx.fillStyle = colors.top; ctx.fillRect(-6, -6, 12, 5);
-      ctx.strokeStyle = "#fff"; ctx.lineWidth = 1; ctx.strokeRect(-8, -8, 16, 16); ctx.restore();
+      if (x < -24 || x > gameShell.clientWidth + 24 || y < -24 || y > gameShell.clientHeight + 24) continue;
+      const bob = Math.sin(drop.age * 5) * 1.2;
+      ctx.save(); ctx.translate(x + 9, y + 9 + bob); ctx.rotate(Math.sin(drop.age * 5) * 0.08);
+      ctx.fillStyle = "rgba(0,0,0,.28)"; ctx.beginPath(); ctx.ellipse(0, 11, 10, 3, 0, 0, Math.PI * 2); ctx.fill();
+      drawItemSprite(drop.type, 26);
+      if (drop.count > 1) {
+        ctx.direction = "ltr"; ctx.font = "bold 9px Tahoma"; ctx.textAlign = "right";
+        ctx.lineWidth = 2; ctx.strokeStyle = "#111"; ctx.strokeText(String(drop.count), 14, 15);
+        ctx.fillStyle = "#fff"; ctx.fillText(String(drop.count), 14, 15);
+      }
+      ctx.restore();
     }
   }
 
@@ -716,6 +828,17 @@
     button.addEventListener("lostpointercapture", stop);
   }
 
+  function findTorchPlacement(x, y) {
+    const candidates = [[x, y], [x - BLOCK_SIZE, y], [x + BLOCK_SIZE, y]];
+    for (const [cx, cy] of candidates) {
+      const support = world.getAt(cx, cy + BLOCK_SIZE);
+      if (world.getAt(cx, cy) || !support || !world.isSolid(support)) continue;
+      if (rectanglesOverlap(cx, cy, BLOCK_SIZE, BLOCK_SIZE, player.x, player.y, player.width, player.height)) continue;
+      return { x: cx, y: cy };
+    }
+    return null;
+  }
+
   function placeBlockAtPointer(block, point) {
     if (!player.alive || anyPanelOpen()) return;
     if (!block || !world.blocks.includes(block)) { setStatus("اول روی یک بلاک کلیک کن"); return; }
@@ -739,8 +862,8 @@
     else y += BLOCK_SIZE;
 
     const type = selectedItemType();
-    const placeAt = type === "torch" ? (world.getAt(x, y) ? false : { x, y }) : world.canPlace(x, y, playerRect());
-    if (!placeAt) { setStatus("این محل پر است، به بلاک دیگری وصل نیست یا داخل بازیکن قرار می‌گیرد"); return; }
+    const placeAt = type === "torch" ? findTorchPlacement(block.x, block.y - BLOCK_SIZE) : world.canPlace(x, y, playerRect());
+    if (!placeAt) { setStatus(type === "torch" ? "مشعل را روی سطح خالیِ بالای یک بلاک و کنار بازیکن قرار بده" : "این محل پر است، به بلاک دیگری وصل نیست یا داخل بازیکن قرار می‌گیرد"); return; }
     if (!type) { setStatus("اول Hotbar را انتخاب کن؛ خانهٔ انتخاب‌شده بلاک ندارد"); return; }
     const newBlock = world.addBlock(placeAt.x, placeAt.y, type);
     if (newBlock) {
@@ -773,8 +896,8 @@
       .filter(Boolean);
     if (!neighbors.some(isWithinPlaceReach)) { setStatus("برای قراردادن، کنار یک بلاک نزدیک را انتخاب کن"); return; }
     const type = selectedItemType();
-    const placeAt = type === "torch" ? (world.getAt(gx, gy) ? false : { x: gx, y: gy }) : world.canPlace(gx, gy, playerRect());
-    if (!placeAt) { setStatus("این محل پر است یا داخل بازیکن قرار می‌گیرد"); return; }
+    const placeAt = type === "torch" ? findTorchPlacement(gx, gy) : world.canPlace(gx, gy, playerRect());
+    if (!placeAt) { setStatus(type === "torch" ? "مشعل باید روی یک بلاک قرار بگیرد؛ خانهٔ خالیِ بالای زمین را لمس کن" : "این محل پر است یا داخل بازیکن قرار می‌گیرد"); return; }
     if (!type) { setStatus("اول Hotbar را انتخاب کن؛ خانهٔ انتخاب‌شده بلاک ندارد"); return; }
     const newBlock = world.addBlock(placeAt.x, placeAt.y, type);
     if (newBlock) {
@@ -796,13 +919,14 @@
   }
 
   function anyPanelOpen() {
-    return inventoryOpen || (craftingPanel && !craftingPanel.hidden) || (furnacePanel && !furnacePanel.hidden) || (mainMenuPanel && !mainMenuPanel.hidden);
+    return inventoryOpen || (craftingPanel && !craftingPanel.hidden) || (furnacePanel && !furnacePanel.hidden) || (mobileHelpPanel && !mobileHelpPanel.hidden) || (mainMenuPanel && !mainMenuPanel.hidden);
   }
   function closeAllPanels() {
     inventoryOpen = false;
     if (craftingPanel) craftingPanel.hidden = true;
     if (furnacePanel) furnacePanel.hidden = true;
     if (inventoryElement) inventoryElement.hidden = true;
+    if (mobileHelpPanel) mobileHelpPanel.hidden = true;
     activeStationKey = null; activeStationType = null;
     renderInventory();
   }
@@ -978,10 +1102,12 @@
     setStatus("Respawned — your dropped items are still in the world");
   }
   function refreshMenuButtons() {
-    const hasSave = !!localStorage.getItem("minecraft2d-web-save-v3");
+    let hasSave = false;
+    try { hasSave = !!localStorage.getItem("minecraft2d-web-save-v3"); } catch (_) {}
     if (menuContinueButton) menuContinueButton.disabled = !hasSave;
     if (menuLoadButton) menuLoadButton.disabled = !hasSave;
-    if (menuSaveButton) menuSaveButton.disabled = !hasSave;
+    // The first save must be possible even before a save file exists.
+    if (menuSaveButton) menuSaveButton.disabled = false;
   }
   function startNewWorld() {
     localStorage.removeItem("minecraft2d-web-save-v3");
@@ -1009,8 +1135,18 @@
 
   function saveGame(showMessage = true) {
     const data = { version: 3, world: world.exportChanges(), player: { x: player.x, y: player.y, vy: player.vy, onGround: player.onGround, health: player.health, hunger: player.hunger, hungerTimer: player.hungerTimer, starvationTimer: player.starvationTimer, regenTimer: player.regenTimer, fallStartY: player.fallStartY, alive: player.alive }, inventory, selectedSlot, drops, clock: clock.minutes, mobs: mobs.save(), furnaces: [...furnaces.entries()] };
-    try { localStorage.setItem("minecraft2d-web-save-v3", JSON.stringify(data)); refreshMenuButtons(); if (showMessage) setStatus("بازی ذخیره شد"); return true; }
-    catch (error) { console.warn("Save failed", error); if (showMessage) setStatus("ذخیره‌سازی در این مرورگر در دسترس نیست"); return false; }
+    try {
+      localStorage.setItem("minecraft2d-web-save-v3", JSON.stringify(data));
+      refreshMenuButtons();
+      if (menuSaveStatus) menuSaveStatus.textContent = "جهان با موفقیت ذخیره شد ✓";
+      if (showMessage) setStatus("بازی ذخیره شد");
+      return true;
+    } catch (error) {
+      console.warn("Save failed", error);
+      if (menuSaveStatus) menuSaveStatus.textContent = "ذخیره انجام نشد؛ فضای ذخیره‌سازی مرورگر را بررسی کن.";
+      if (showMessage) setStatus("ذخیره‌سازی در این مرورگر در دسترس نیست");
+      return false;
+    }
   }
   function loadGame(showMessage = true) {
     try {
@@ -1033,6 +1169,7 @@
       if (showMessage) setStatus("بازی بارگذاری شد"); return true;
     } catch (error) { console.warn("Load failed", error); if (showMessage) setStatus("فایل ذخیره خراب یا ناسازگار است"); return false; }
   }
+  let visibleBlocksForLighting = [];
   function applyDarkness(width, height) {
     const underground = player.y > surfaceY(player.x) + BLOCK_SIZE * 2;
     const darkness = Math.min(.76, Math.max((1 - clock.light) * .62, underground ? .62 : 0));
@@ -1040,18 +1177,33 @@
     ctx.save();
     ctx.fillStyle = `rgba(5, 10, 27, ${darkness})`;
     ctx.fillRect(0, 0, width, height);
-    // Additive light pools keep the night/cave overlay opaque while illuminating torches.
+    // Warm two-layer torch pools: a broad amber halo and a brighter local core.
+    // Only visible torches are processed, with a small cap for low-end phones.
     ctx.globalCompositeOperation = "screen";
-    const lights = [];
-    for (const b of world.blocks) if (b.type === "torch") lights.push({ x: b.x + BLOCK_SIZE / 2 - camera.x, y: b.y + BLOCK_SIZE / 2 - camera.y, r: 155, alpha: .72 });
-    lights.push({ x: player.x + player.width / 2 - camera.x, y: player.y + player.height / 2 - camera.y, r: 72, alpha: .17 });
+    const visibleTorches = visibleBlocksForLighting.filter(b => b.type === "torch").slice(0, 10);
+    const lights = visibleTorches.map(b => ({
+      x: b.x + BLOCK_SIZE / 2 - camera.x,
+      y: b.y + 10 - camera.y,
+      seed: b.x * .013 + b.y * .017,
+      torch: true
+    }));
+    lights.push({ x: player.x + player.width / 2 - camera.x, y: player.y + player.height / 2 - camera.y, seed: 0, torch: false });
     for (const light of lights) {
-      if (light.x < -light.r || light.x > width + light.r || light.y < -light.r || light.y > height + light.r) continue;
-      const g = ctx.createRadialGradient(light.x, light.y, 5, light.x, light.y, light.r);
-      g.addColorStop(0, `rgba(255, 190, 100, ${darkness * light.alpha})`);
-      g.addColorStop(.45, `rgba(255, 145, 65, ${darkness * light.alpha * .38})`);
-      g.addColorStop(1, "rgba(255, 145, 65, 0)");
-      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(light.x, light.y, light.r, 0, Math.PI * 2); ctx.fill();
+      const radius = light.torch ? 185 : 72;
+      if (light.x < -radius || light.x > width + radius || light.y < -radius || light.y > height + radius) continue;
+      const flicker = light.torch ? Math.sin(performance.now() / 105 + light.seed) * .035 : 0;
+      const halo = ctx.createRadialGradient(light.x, light.y, 2, light.x, light.y, radius);
+      halo.addColorStop(0, `rgba(255, 196, 112, ${darkness * (light.torch ? .52 + flicker : .13)})`);
+      halo.addColorStop(.35, `rgba(255, 145, 67, ${darkness * (light.torch ? .28 : .05)})`);
+      halo.addColorStop(1, "rgba(255, 145, 65, 0)");
+      ctx.fillStyle = halo; ctx.beginPath(); ctx.arc(light.x, light.y, radius, 0, Math.PI * 2); ctx.fill();
+      if (light.torch) {
+        const core = ctx.createRadialGradient(light.x, light.y, 1, light.x, light.y, 64);
+        core.addColorStop(0, `rgba(255, 235, 164, ${darkness * .38})`);
+        core.addColorStop(.5, `rgba(255, 175, 86, ${darkness * .18})`);
+        core.addColorStop(1, "rgba(255, 175, 86, 0)");
+        ctx.fillStyle = core; ctx.beginPath(); ctx.arc(light.x, light.y, 64, 0, Math.PI * 2); ctx.fill();
+      }
     }
     ctx.restore();
   }
@@ -1138,6 +1290,26 @@
     };
 
     ctx.save();
+    if (type === "torch") {
+      // A torch is a small world object, not a 40×40 solid cube.
+      // Its base aligns with the supporting block and the flame remains readable.
+      const flicker = Math.sin(performance.now() / 82 + seedBase) * 1.8;
+      const glow = ctx.createRadialGradient(x + 20, y + 10, 2, x + 20, y + 10, 27);
+      glow.addColorStop(0, "rgba(255,222,125,.35)");
+      glow.addColorStop(.45, "rgba(255,146,42,.15)");
+      glow.addColorStop(1, "rgba(255,130,20,0)");
+      ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(x + 20, y + 10, 27, 0, Math.PI * 2); ctx.fill();
+      // Wooden shaft with bevel and a small dark collar.
+      ctx.fillStyle = "#4b2c18"; ctx.beginPath(); ctx.moveTo(x + 17, y + 15); ctx.lineTo(x + 23, y + 13); ctx.lineTo(x + 25, y + 38); ctx.lineTo(x + 20, y + 39); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = "#ad7440"; ctx.beginPath(); ctx.moveTo(x + 18, y + 17); ctx.lineTo(x + 21, y + 16); ctx.lineTo(x + 23, y + 36); ctx.lineTo(x + 20, y + 37); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = "#5a321b"; ctx.fillRect(x + 17, y + 17, 7, 3);
+      // Warm, animated flame with a bright core.
+      ctx.fillStyle = "#e66a16"; ctx.beginPath(); ctx.moveTo(x + 14, y + 18); ctx.quadraticCurveTo(x + 8, y + 6 - flicker, x + 19, y + 1 - flicker); ctx.quadraticCurveTo(x + 31, y + 7, x + 25, y + 18); ctx.quadraticCurveTo(x + 21, y + 22, x + 14, y + 18); ctx.fill();
+      ctx.fillStyle = "#ffb52e"; ctx.beginPath(); ctx.moveTo(x + 17, y + 17); ctx.quadraticCurveTo(x + 14, y + 9, x + 20, y + 5 - flicker * .35); ctx.quadraticCurveTo(x + 27, y + 11, x + 22, y + 18); ctx.fill();
+      ctx.fillStyle = "#fff4a6"; ctx.beginPath(); ctx.ellipse(x + 20, y + 13, 2.7, 5.2, .12, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+      return;
+    }
     // Dark side face and subtle top highlight give every cube a consistent 2D volume.
     ctx.fillStyle = colors.side;
     ctx.fillRect(x, y, BLOCK_SIZE, BLOCK_SIZE);
@@ -1217,12 +1389,6 @@
       const flicker = Math.sin(performance.now() / 125 + seedBase) * 2;
       ctx.fillStyle = "#f28a28"; ctx.beginPath(); ctx.moveTo(x + 16, y + 29); ctx.lineTo(x + 18, y + 20 - flicker); ctx.lineTo(x + 22, y + 26); ctx.lineTo(x + 25, y + 18 + flicker); ctx.lineTo(x + 26, y + 31); ctx.closePath(); ctx.fill();
       ctx.fillStyle = "#ffe47c"; ctx.fillRect(x + 19, y + 25, 4, 6);
-    } else if (type === "torch") {
-      ctx.fillStyle = "#79502c"; ctx.fillRect(x + 18, y + 15, 5, 22);
-      ctx.fillStyle = "#c18a4b"; ctx.fillRect(x + 19, y + 17, 2, 18);
-      ctx.fillStyle = "rgba(255,165,44,.18)"; ctx.beginPath(); ctx.arc(x + 20, y + 12, 14 + Math.sin(performance.now() / 90) * 2, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = "#f78e25"; ctx.beginPath(); ctx.moveTo(x + 15, y + 17); ctx.quadraticCurveTo(x + 11, y + 4, x + 20, y + 2); ctx.quadraticCurveTo(x + 30, y + 8, x + 24, y + 18); ctx.fill();
-      ctx.fillStyle = "#ffe98b"; ctx.beginPath(); ctx.moveTo(x + 19, y + 16); ctx.quadraticCurveTo(x + 15, y + 8, x + 21, y + 6); ctx.quadraticCurveTo(x + 26, y + 12, x + 22, y + 17); ctx.fill();
     } else {
       ctx.fillStyle = colors.top; ctx.fillRect(x + 1, y + 1, 38, 38); specks(12, [colors.detail, colors.side, colors.top], 2, 4);
     }
@@ -1321,8 +1487,9 @@
 
     const visibleBlocks = world.blocksInRect(
       camera.x - BLOCK_SIZE, camera.y - BLOCK_SIZE,
-      camera.x + width + BLOCK_SIZE, camera.y + height + BLOCK_SIZE
+      camera.x + width + BLOCK_SIZE, camera.y + height + BLOCK_SIZE, true
     );
+    visibleBlocksForLighting = visibleBlocks;
     for (const block of visibleBlocks) drawBlock(block, width, height);
     drawDrops();
     mobs.draw(ctx, camera, width, height);
@@ -1366,6 +1533,16 @@
     ctx.fillRect(px, py + 30 + armSwing, 6, 24); ctx.fillRect(px + 26, py + 30 - armSwing, 6, 24);
     ctx.fillStyle = skinDark;
     ctx.fillRect(px, py + 47 + armSwing, 6, 7); ctx.fillRect(px + 26, py + 47 - armSwing, 6, 7);
+    // Show the selected handheld tool/torch beside the active hand.
+    const heldItem = selectedStack();
+    if (heldItem && (TOOL_INFO[heldItem.type] || heldItem.type === "torch")) {
+      ctx.save();
+      ctx.translate(px + (faceRight ? 31 : 1), py + 47);
+      if (!faceRight) ctx.scale(-1, 1);
+      ctx.rotate(faceRight ? -.08 : .08);
+      drawItemSprite(heldItem.type, 25);
+      ctx.restore();
+    }
     // Neck, head outline, skin, ears and hair.
     ctx.fillStyle = outline; ctx.fillRect(px + 11, py + 24, 10, 8);
     ctx.fillStyle = skin; ctx.fillRect(px + 12, py + 25, 8, 7);
@@ -1393,12 +1570,19 @@
     if (!player.alive) { ctx.fillStyle = "rgba(120,0,0,.18)"; ctx.fillRect(0, 0, width, height); }
   }
 
+  let lastRenderTime = 0;
   function loop(timestamp) {
     if (!lastTime) lastTime = timestamp;
-    const dt = Math.min((timestamp - lastTime) / 1000, 0.033);
+    const dt = Math.min((timestamp - lastTime) / 1000, 0.05);
     lastTime = timestamp;
     if (!document.body.classList.contains("needs-landscape")) update(dt);
-    render();
+    const touchLike = navigator.maxTouchPoints > 0 || matchMedia("(pointer: coarse)").matches;
+    const menuOpen = mainMenuPanel && !mainMenuPanel.hidden;
+    const renderInterval = menuOpen ? 1000 / 18 : touchLike ? 1000 / 40 : 1000 / 60;
+    if (timestamp - lastRenderTime >= renderInterval) {
+      render();
+      lastRenderTime = timestamp;
+    }
     requestAnimationFrame(loop);
   }
 
@@ -1458,6 +1642,7 @@
   connectBreakHold(touchBreakButton);
   if (craftingToggle) craftingToggle.addEventListener("click", () => { if (anyPanelOpen()) closeAllPanels(); else openCraftingMenu(false); });
   inventoryToggle.addEventListener("click", () => {
+    if (mobileHelpPanel) mobileHelpPanel.hidden = true;
     if (craftingPanel && !craftingPanel.hidden || furnacePanel && !furnacePanel.hidden) closeAllPanels();
     else { inventoryOpen = !inventoryOpen; renderInventory(); }
   });
@@ -1492,9 +1677,26 @@
   });
   if (menuSaveButton) menuSaveButton.addEventListener("click", () => { Sound.unlock(); saveGame(true); });
   if (soundToggleButton) soundToggleButton.addEventListener("click", () => { Sound.toggle(); });
+  if (aboutToggleButton && aboutPanel) aboutToggleButton.addEventListener("click", () => {
+    aboutPanel.hidden = !aboutPanel.hidden;
+    aboutToggleButton.setAttribute("aria-expanded", aboutPanel.hidden ? "false" : "true");
+  });
+  if (helpToggleButton && mobileHelpPanel) helpToggleButton.addEventListener("click", () => {
+    mobileHelpPanel.hidden = !mobileHelpPanel.hidden;
+    if (!mobileHelpPanel.hidden) closeOtherGameplayPanelsForHelp();
+  });
+  if (mobileHelpCloseButton && mobileHelpPanel) mobileHelpCloseButton.addEventListener("click", () => { mobileHelpPanel.hidden = true; });
+  function closeOtherGameplayPanelsForHelp() {
+    inventoryOpen = false;
+    if (inventoryElement) inventoryElement.hidden = true;
+    if (craftingPanel) craftingPanel.hidden = true;
+    if (furnacePanel) furnacePanel.hidden = true;
+    renderInventory();
+  }
   if (pauseMenuButton) pauseMenuButton.addEventListener("click", () => {
     Sound.unlock();
     releaseInputs();
+    if (mobileHelpPanel) mobileHelpPanel.hidden = true;
     if (mainMenuPanel) mainMenuPanel.hidden = !mainMenuPanel.hidden;
   });
   tryLandscapeButton.addEventListener("click", requestLandscape);

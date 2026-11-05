@@ -782,3 +782,69 @@ body.needs-landscape #rotate-screen { display:flex; }
   }
   #top-hud { right:7px; left:auto; }
 }
+
+/* v29 — readable creator/about details, compact mobile help, and distinct item sprites. */
+.main-menu-card { max-height:calc(100dvh - 28px); overflow:auto; scrollbar-width:thin; }
+.menu-save-status { min-height:16px; margin:-4px 0 0; color:#9fe4a8; font-size:11px; line-height:1.5; }
+.menu-save-status:empty { display:none; }
+.about-toggle { min-height:32px; padding:5px 12px; border:1px solid rgba(203,221,234,.28); border-radius:18px; background:rgba(9,18,29,.42); color:#cfe3ef; font-size:11px; }
+.about-toggle:hover { background:rgba(68,103,125,.5); }
+.about-panel { width:100%; padding:10px 12px; border:1px solid rgba(173,210,225,.25); border-radius:10px; background:rgba(8,17,28,.48); color:#e7f2f7; text-align:center; }
+.about-panel strong { display:block; color:#b9f09d; font-size:13px; }
+.about-panel span { display:block; margin-top:4px; color:#a9c3d3; font-size:10px; direction:ltr; }
+.about-panel p { margin:7px 0 0; color:#d0dce5; font-size:11px; line-height:1.7; }
+#mobile-help-panel { position:absolute; z-index:85; top:max(48px,calc(env(safe-area-inset-top,0px) + 43px)); left:max(8px,env(safe-area-inset-left,0px)); width:min(290px,calc(100vw - 22px)); padding:12px 13px; border:1px solid rgba(220,235,245,.35); border-radius:12px; background:rgba(12,23,37,.96); color:#eef6fb; box-shadow:0 12px 35px rgba(0,0,0,.42); direction:rtl; pointer-events:auto; }
+#mobile-help-panel[hidden] { display:none !important; }
+.mobile-help-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; color:#b9f09d; }
+.mobile-help-head button { width:27px; height:27px; border:1px solid #60758b; border-radius:6px; background:#26394d; color:#fff; }
+#mobile-help-panel p { margin:5px 0; font-size:11px; line-height:1.65; color:#d5e2eb; }
+#mobile-help-panel p b { color:#fff0ad; }
+#help-toggle { font-weight:900; font-family:Arial,sans-serif; }
+
+/* Pixel-style inventory icons: block textures and individual tool silhouettes. */
+.slot-icon { overflow:visible; border:1px solid rgba(255,255,255,.32); image-rendering:pixelated; }
+.slot-icon.grass { background:linear-gradient(to bottom,#7bd64b 0 24%,#428a2b 24% 32%,#936039 32% 100%); box-shadow:inset 2px 2px rgba(255,255,255,.25),inset -3px -3px rgba(0,0,0,.2); }
+.slot-icon.dirt { background:radial-gradient(circle at 25% 35%,#bd8655 0 11%,transparent 13%),radial-gradient(circle at 70% 65%,#5b361f 0 12%,transparent 14%),linear-gradient(145deg,#a16a40,#754323); box-shadow:inset 2px 2px rgba(255,255,255,.14),inset -2px -2px rgba(0,0,0,.22); }
+.slot-icon.stone { background:radial-gradient(circle at 25% 28%,#b9bec4 0 8%,transparent 10%),radial-gradient(circle at 72% 72%,#535963 0 10%,transparent 12%),linear-gradient(135deg,#a1a7ae,#656c76); }
+.slot-icon.wood { background:repeating-linear-gradient(90deg,#744426 0 3px,#c08a50 3px 7px,#996239 7px 10px); box-shadow:inset 2px 2px rgba(255,255,255,.2); }
+.slot-icon.leaves,.slot-icon.leaf { background:radial-gradient(circle at 30% 30%,#8bd85b 0 12%,transparent 14%),radial-gradient(circle at 70% 64%,#1c6128 0 14%,transparent 16%),linear-gradient(135deg,#47a844,#236b2d); border-radius:4px; }
+.slot-icon.bedrock { background:repeating-linear-gradient(135deg,#171c24 0 3px,#48515d 3px 6px,#252b34 6px 9px); }
+.slot-icon.coal { background:radial-gradient(ellipse at 30% 30%,#15191f 0 18%,transparent 22%),radial-gradient(ellipse at 70% 65%,#090c10 0 22%,transparent 27%),linear-gradient(135deg,#858a91,#30353c 65%,#171a1e); box-shadow:inset 2px 2px rgba(255,255,255,.18); }
+.slot-icon.iron { background:radial-gradient(circle at 30% 27%,#f4e2d0 0 14%,transparent 17%),radial-gradient(circle at 70% 70%,#806a58 0 20%,transparent 23%),linear-gradient(135deg,#bba18b,#776556); }
+.slot-icon.gold { background:radial-gradient(circle at 30% 27%,#fff4a0 0 16%,transparent 19%),radial-gradient(circle at 70% 68%,#8c6511 0 18%,transparent 22%),linear-gradient(135deg,#ffe76e,#b27b12); }
+.slot-icon.diamond { background:linear-gradient(135deg,transparent 8%,#caffff 9% 18%,transparent 19%),radial-gradient(circle at 65% 65%,#16717b 0 24%,transparent 26%),linear-gradient(135deg,#a7fff8,#36bfc1 55%,#126d83); }
+.slot-icon.planks { background:repeating-linear-gradient(0deg,#78482c 0 2px,#c89158 2px 7px,#a66e3d 7px 9px); border:1px solid #604027; }
+.slot-icon.crafting_table { background:linear-gradient(#e0b576 0 25%,#9a6136 25% 100%); border:2px solid #53341f; box-shadow:inset 0 -5px #5b361f; }
+.slot-icon.furnace { background:linear-gradient(#a0a5aa 0 20%,#606872 20% 100%); border:2px solid #303740; box-shadow:inset 0 -5px #3a4149; }
+.slot-icon.iron_ingot,.slot-icon.gold_ingot { border:0; background:none; box-shadow:none; }
+.slot-icon.iron_ingot::before,.slot-icon.gold_ingot::before { content:""; position:absolute; inset:5px 1px 4px; clip-path:polygon(12% 16%,78% 0,100% 45%,81% 100%,8% 82%,0 45%); background:linear-gradient(145deg,#fff 0%,#d3dce2 30%,#85919b 68%,#4b5964 100%); filter:drop-shadow(1px 2px 1px #111); }
+.slot-icon.gold_ingot::before { background:linear-gradient(145deg,#fff6a7 0%,#f7d34b 35%,#bd8618 72%,#79500d 100%); }
+.slot-icon.stick { border:0; background:linear-gradient(135deg,transparent 37%,#57361d 38% 56%,transparent 57%),linear-gradient(135deg,transparent 42%,#d4a16b 43% 50%,transparent 51%); box-shadow:none; }
+.slot-icon.torch { border:0; background:none; box-shadow:none; }
+.slot-icon.torch::before { content:""; position:absolute; left:43%; top:35%; width:5px; height:16px; background:linear-gradient(90deg,#6d431f,#c18b4e,#6b411f); transform:rotate(-5deg); box-shadow:1px 1px 0 #372316; }
+.slot-icon.torch::after { content:""; position:absolute; left:29%; top:0; width:13px; height:14px; background:radial-gradient(ellipse at 50% 65%,#fff9ae 0 24%,#ffc13d 28% 54%,#e96718 58% 100%); clip-path:polygon(48% 0,61% 28%,100% 54%,83% 100%,18% 100%,0 55%,34% 30%); filter:drop-shadow(0 0 3px #ff9e27); }
+.slot-icon.wool { background:radial-gradient(circle at 30% 35%,#fff 0 22%,transparent 24%),radial-gradient(circle at 65% 30%,#f8faf8 0 23%,transparent 25%),radial-gradient(circle at 50% 68%,#d3d9d8 0 30%,#f7f8f3 32%); border:0; border-radius:40%; }
+.slot-icon.meat,.slot-icon.mutton { background:radial-gradient(ellipse at 35% 30%,#f3a0a0 0 18%,transparent 22%),linear-gradient(145deg,#df6d73,#922d3d); clip-path:polygon(5% 30%,35% 7%,77% 15%,100% 55%,75% 96%,25% 90%,0 60%); }
+.slot-icon.cooked_beef,.slot-icon.cooked_mutton { background:radial-gradient(ellipse at 35% 30%,#d58b5e 0 18%,transparent 22%),linear-gradient(145deg,#9a5137,#51281f); clip-path:polygon(5% 30%,35% 7%,77% 15%,100% 55%,75% 96%,25% 90%,0 60%); }
+.slot-icon.apple { background:radial-gradient(circle at 34% 36%,#ff8276 0 18%,transparent 20%),linear-gradient(135deg,#f04c36,#951e1a); border-radius:45% 50% 48% 50%; border:1px solid #7f1b17; }
+.slot-icon.apple::after { content:""; position:absolute; width:8px; height:4px; left:12px; top:-2px; border-radius:100% 0; background:#78b64c; transform:rotate(-30deg); }
+.slot-icon.bone { border:0; background:none; box-shadow:none; }
+.slot-icon.bone::before { content:""; position:absolute; left:4px; top:8px; width:16px; height:5px; border-radius:5px; transform:rotate(-42deg); background:#f0e5cd; box-shadow:0 1px 2px #7b7161; }
+.slot-icon.bone::after { content:""; position:absolute; left:1px; top:4px; width:6px; height:6px; border-radius:50%; background:#fff4dc; box-shadow:15px 15px 0 #f7edd8; }
+.slot-icon.zombie_meat { background:radial-gradient(circle at 30% 25%,#b6c77b 0 14%,transparent 16%),linear-gradient(145deg,#859d52,#435d3c); clip-path:polygon(5% 25%,35% 5%,78% 14%,100% 58%,70% 95%,18% 88%,0 55%); }
+.slot-icon[class*="_pickaxe"],.slot-icon[class*="_axe"],.slot-icon[class*="_sword"] { border:0; background:none; box-shadow:none; }
+.slot-icon[class*="_pickaxe"]::before,.slot-icon[class*="_axe"]::before,.slot-icon[class*="_sword"]::before { content:""; position:absolute; width:4px; height:23px; left:9px; top:0; transform:rotate(42deg); transform-origin:center; border-radius:1px; background:linear-gradient(90deg,#68401f,#c18b4e 50%,#5b371d); box-shadow:1px 1px 0 #201a14; }
+.slot-icon[class*="_pickaxe"]::after { content:""; position:absolute; width:19px; height:7px; left:1px; top:0; border-radius:2px 6px 2px 2px; transform:rotate(-7deg); background:linear-gradient(#fff,#aeb9c2 45%,#69747e); clip-path:polygon(0 30%,24% 0,55% 25%,100% 20%,88% 85%,48% 100%,25% 60%); box-shadow:0 1px 2px #111; }
+.slot-icon[class*="_axe"]::after { content:""; position:absolute; width:14px; height:15px; left:7px; top:0; transform:rotate(15deg); background:linear-gradient(135deg,#fff,#b8c3cb 45%,#5f6d78); clip-path:polygon(0 0,100% 10%,90% 73%,52% 100%,0 73%); }
+.slot-icon[class*="_sword"]::after { content:""; position:absolute; width:8px; height:22px; left:10px; top:-2px; transform:rotate(-42deg); background:linear-gradient(90deg,#687781,#f3f7f8 45%,#9daab2); clip-path:polygon(40% 0,100% 78%,50% 100%,0 78%); }
+.slot-icon[class*="wooden_"]::after { filter:sepia(.9) saturate(.8); }
+.slot-icon[class*="golden_"]::after { background:linear-gradient(135deg,#fff6a1,#f2c735 45%,#91650c) !important; }
+.slot-icon[class*="diamond_"]::after { background:linear-gradient(135deg,#e5ffff,#53d9d3 45%,#126d78) !important; }
+.slot-icon[class*="iron_"]::after { background:linear-gradient(135deg,#fff,#cbd3db 45%,#67737d) !important; }
+
+@media (pointer:coarse), (hover:none), (max-width:700px) {
+  #mobile-help-panel { top:max(46px,calc(env(safe-area-inset-top,0px) + 42px)); }
+  #help-toggle { display:grid !important; }
+  .main-menu-card { padding:17px 19px 14px; gap:8px; }
+  .about-panel { padding:8px 10px; }
+}

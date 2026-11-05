@@ -1,5 +1,5 @@
 "use strict";
-const CACHE_NAME = "minecraft-web-v28";
+const CACHE_NAME = "minecraft-web-v29";
 const FILES_TO_CACHE = ["./", "./index.html", "./style.css", "./world.js", "./script.js", "./survival.js", "./manifest.json", "./icons/icon-192.png", "./icons/icon-512.png", "./icons/icon-maskable-512.png", "./sounds/food.mp3", "./sounds/sheep-hit.mp3", "./sounds/cow-hit.mp3", "./sounds/zombie.mp3", "./sounds/background_music.mp3"];
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(FILES_TO_CACHE)));

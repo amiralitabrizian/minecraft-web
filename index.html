@@ -7,13 +7,13 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <link rel="icon" type="image/png" sizes="32x32" href="./icons/icon-192.png?v=28">
-  <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png?v=28">
-  <link rel="apple-touch-icon" sizes="192x192" href="./icons/icon-192.png?v=28">
+  <link rel="icon" type="image/png" sizes="32x32" href="./icons/icon-192.png?v=29">
+  <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png?v=29">
+  <link rel="apple-touch-icon" sizes="192x192" href="./icons/icon-192.png?v=29">
   <meta name="description" content="Minecraft2D Web — a small block-based browser game">
   <title>Minecraft2D Web</title>
-  <link rel="manifest" href="./manifest.json?v=28">
-  <link rel="stylesheet" href="./style.css?v=28">
+  <link rel="manifest" href="./manifest.json?v=29">
+  <link rel="stylesheet" href="./style.css?v=29">
 </head>
 <body>
   <section id="rotate-screen" aria-live="polite">
@@ -44,7 +44,18 @@
       <button id="pause-menu-button" type="button" aria-label="منو" title="منو">☰</button>
       <button id="inventory-toggle" type="button" aria-label="Inventory" title="Inventory">▤</button>
       <button id="crafting-toggle" type="button" aria-label="Crafting" title="Crafting">⚒</button>
+      <button id="help-toggle" type="button" aria-label="راهنما" title="راهنما">?</button>
     </nav>
+    <aside id="mobile-help-panel" hidden aria-label="راهنمای کنترل بازی">
+      <div class="mobile-help-head"><strong>راهنمای بازی</strong><button id="mobile-help-close" type="button" aria-label="بستن">✕</button></div>
+      <p><b>حرکت:</b> دکمه‌های چپ و راست</p>
+      <p><b>پرش:</b> دکمهٔ ▲</p>
+      <p><b>شکستن:</b> روی بلاک انگشت را نگه دار</p>
+      <p><b>حمله:</b> روی موجود ضربه بزن</p>
+      <p><b>ساختن:</b> خانهٔ خالی کنار بلاک را لمس کن</p>
+      <p><b>وسایل:</b> خانهٔ Hotbar را انتخاب کن</p>
+      <p><b>Inventory:</b> دکمهٔ ▤ · <b>Crafting:</b> دکمهٔ ⚒</p>
+    </aside>
 
     <section id="block-panel" aria-label="ابزار بلاک‌ها" hidden>
       <label for="block-type">بلاک</label><select id="block-type"><option value="grass">چمن</option></select>
@@ -69,7 +80,14 @@
           <button id="menu-new-button" type="button">جهان جدید</button>
           <button id="menu-save-button" type="button">ذخیرهٔ جهان</button>
         </div>
+        <p id="menu-save-status" class="menu-save-status" role="status" aria-live="polite"></p>
         <button id="sound-toggle" class="sound-toggle" type="button">♫ صدا روشن</button>
+        <button id="about-toggle" class="about-toggle" type="button" aria-expanded="false">دربارهٔ بازی و سازنده</button>
+        <section id="about-panel" class="about-panel" hidden>
+          <strong>سازنده: امیرعلی تبریزیان</strong>
+          <span>Developed by Amir Ali Tabrizian</span>
+          <p>Minecraft2D یک بازی دوبعدی بلوکی برای ساخت‌وساز، اکتشاف و زنده‌ماندن است.</p>
+        </section>
         <small class="menu-footer">نسخهٔ وب · ذخیره روی همین دستگاه</small>
       </div>
     </section>
@@ -79,12 +97,12 @@
       <div class="action-controls"><button id="jump-button" type="button" aria-label="پرش" title="پرش">▲</button></div>
     </nav>
   </main>
-  <script src="./world.js?v=28"></script>
-  <script src="./survival.js?v=28"></script>
-  <script src="./script.js?v=28"></script>
+  <script src="./world.js?v=29"></script>
+  <script src="./survival.js?v=29"></script>
+  <script src="./script.js?v=29"></script>
   <script>
     if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
-      window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js?v=28', { updateViaCache: 'none' }).then(registration => registration.update()).catch(err => console.warn('Service worker registration failed:', err)));
+      window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js?v=29', { updateViaCache: 'none' }).then(registration => registration.update()).catch(err => console.warn('Service worker registration failed:', err)));
     }
   </script>
 </body>

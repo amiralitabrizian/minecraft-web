@@ -1,4 +1,4 @@
-# Minecraft2D Web — Survival PWA (v27)
+# Minecraft2D Web — Survival PWA (v29)
 
 A browser-based, 2D block-world survival game. This project is separate from the original Python/Pygame game; its gameplay systems are being ported and adapted for desktop browsers and touch devices.
 
@@ -80,6 +80,19 @@ Original Python/Pygame project: https://github.com/amiralitabrizian/Minecraft2D
 
 Developed by Amir Ali Tabrizian.
 
+## Version 29 — Torch rendering, item art, Help and save fixes
+
+- Fixed world rendering so non-solid torches are included in the visible block pass while collision remains solid-only.
+- Torches now render as upright animated flame objects and can be placed on supported empty cells above solid blocks. Placement avoids the player's body and tries an adjacent supported cell when needed.
+- Dropped blocks, ores, ingots, food, wool, bones, sticks, torches, and tools now use individual small pixel-art silhouettes instead of one generic square.
+- Inventory icons have distinct ore, block, food, torch, ingot, and tool designs.
+- Added a creator/About section to the start screen: Amir Ali Tabrizian / امیرعلی تبریزیان.
+- Added a compact mobile Help button and a small overlay explaining touch controls. The Help text stays hidden until requested so it does not clutter the game view.
+- Fixed the first-run Save button, which was previously disabled when no save existed; save feedback is now visible in the start menu.
+- Reduced a repeat Inventory DOM rebuild when drops are near a full inventory; pickup refresh is batched.
+- Lighting now checks only visible torches instead of scanning every loaded world block on every rendered frame. Mobile canvas pixel ratio and render cadence are capped to reduce GPU load.
+- Day/night timing and the sun/moon path are unchanged: 05:00 sunrise starts, 06:00 day starts, 17:00 sunset starts, and 20:00 night starts, matching the original Python project's GameTime constants.
+
 ## Version 28 — Visual and mobile controls update
 
 This update focuses on a cleaner game screen and a closer match to the original Pygame project:
@@ -96,6 +109,6 @@ This update focuses on a cleaner game screen and a closer match to the original 
 
 **Desktop:** A/D or arrow keys to move, Space to jump, left-click and hold to mine, left-click a mob to attack, right-click to place or interact, E for inventory, C for crafting, F to attack the last targeted position, R to eat, and number keys 1–9 to select a hotbar slot. Mouse wheel changes the selected slot.
 
-**Mobile:** rotate to landscape; use the left/right buttons and jump button. Tap a mob to attack, hold a block to mine, tap an empty adjacent cell to place the selected block, and tap a crafting table or furnace to open it. The three compact top-left buttons open the menu, inventory, and crafting screen.
+**Mobile:** rotate to landscape; use the left/right and jump controls. Tap a mob to attack, hold a block to mine, tap an empty supported cell to place the selected block, and tap a crafting table or furnace to open it. The compact top-left buttons open the menu, Inventory, Crafting, and Help.
 
 Save data is stored locally in the current browser on the current device. It is not automatically synced between devices.
