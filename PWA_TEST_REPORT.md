@@ -1,8 +1,16 @@
-# Minecraft2D Web — v29 Test Report
+# Minecraft2D Web — v30 Test Report
 
-Test date: 2026-11-05
+Test date: 2026-11-06
 
-## Fixes included in v29
+## Changes included in v30
+
+- Added persistent independent music and sound-effect volume sliders in the main menu. The default music level is 18%, the default effects level is 100%, and zero volume mutes the selected audio bus.
+- Fixed default-volume initialization so an absent local-storage key uses the intended default rather than being interpreted as numeric zero.
+- Confirmed night-only zombie and skeleton spawning logic: the target population is three zombies and two skeletons around the player. Zombies chase and attack at close range; skeletons retreat when approached and shoot arrows within range. Hostiles are removed on the day transition and burn in uncovered daytime areas.
+- Confirmed the clock uses one in-game minute per real second, matching the original Python `GameTime`. It advances during active gameplay and pauses while the main menu/pause overlay is open. Opening inventory/crafting does not stop the clock.
+- Updated service-worker cache version and static asset query strings to v30.
+
+## Previous fixes retained from v29
 
 - Non-solid world objects such as torches are included in the renderer query; solid-only collision queries remain unchanged.
 - A torch is drawn as an upright wooden stick with an animated flame and a warm glow. It can be placed in a supported empty cell above a solid block, and placement avoids intersecting the player.
@@ -39,3 +47,17 @@ These are automated Chromium tests using desktop/mobile viewport and touch emula
 ## Storage note
 
 World saves are stored locally in the current browser on the current device. They do not automatically synchronize between different phones or computers.
+
+
+## v30 automated checks
+
+- `node --check` passed for `script.js`, `world.js`, `survival.js`, and `sw.js`.
+- Unit simulation of `MobSystem.spawnForPhase` with an empty test world spawned three zombies and two skeletons during night and no hostiles during day.
+- `GameClock` timing check: 10 real seconds advanced the clock by 10 in-game minutes; a 24-hour game cycle corresponds to 24 real minutes, matching the original Python timing constant.
+- Audio-module test with mocked browser audio objects confirmed defaults of music 18% / effects 100%, persistence of slider values, music gain scaling, and sound-effect gain scaling (for example, a 65% effect at a 50% master-effects setting plays at 32.5%).
+- Source-level check confirms the main update loop returns before `clock.update(dt)` while the main menu/pause overlay is visible; gameplay panels do not trigger that return.
+- Verified that index script/style references and service-worker cache use v30.
+
+## Not run in this environment
+
+- A full interactive browser test with audio playback and range-slider input was not available in this runtime. No physical Android/iPhone or laptop hardware test was performed. Check volume sliders and mob spawns in the published v30 build before treating this release as device-verified.

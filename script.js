@@ -35,6 +35,10 @@
   const menuSaveButton = document.getElementById("menu-save-button");
   const menuSaveStatus = document.getElementById("menu-save-status");
   const soundToggleButton = document.getElementById("sound-toggle");
+  const musicVolumeInput = document.getElementById("music-volume");
+  const effectsVolumeInput = document.getElementById("effects-volume");
+  const musicVolumeValue = document.getElementById("music-volume-value");
+  const effectsVolumeValue = document.getElementById("effects-volume-value");
   const aboutToggleButton = document.getElementById("about-toggle");
   const aboutPanel = document.getElementById("about-panel");
   const helpToggleButton = document.getElementById("help-toggle");
@@ -53,6 +57,14 @@
     let unlocked = false;
     let audioContext = null;
     let music = null;
+    const readVolume = (key, fallback) => {
+      const raw = localStorage.getItem(key);
+      if (raw === null || raw === "") return fallback;
+      const stored = Number(raw);
+      return Number.isFinite(stored) ? Math.max(0, Math.min(100, stored)) : fallback;
+    };
+    let musicVolume = readVolume("minecraft2d-music-volume", 18);
+    let effectsVolume = readVolume("minecraft2d-effects-volume", 100);
     const files = {
       food: "./sounds/food.mp3",
       sheep: "./sounds/sheep-hit.mp3",
@@ -68,9 +80,10 @@
         music = new Audio("./sounds/background_music.mp3");
         music.loop = true;
         music.preload = "none";
-        music.volume = 0.18;
+        music.volume = musicVolume / 100;
       }
-      if (music.paused) music.play().catch(() => {});
+      music.volume = musicVolume / 100;
+      if (music.paused && musicVolume > 0) music.play().catch(() => {});
     }
     function unlock() {
       unlocked = true;
@@ -90,7 +103,7 @@
         oscillator.type = wave;
         oscillator.frequency.setValueAtTime(Math.max(35, frequency), now);
         if (endFrequency) oscillator.frequency.exponentialRampToValueAtTime(Math.max(35, endFrequency), now + duration);
-        gain.gain.setValueAtTime(volume, now);
+        gain.gain.setValueAtTime(volume * effectsVolume / 100, now);
         gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
         oscillator.connect(gain); gain.connect(audioContext.destination);
         oscillator.start(now); oscillator.stop(now + duration);
@@ -105,7 +118,7 @@
         for (let i = 0; i < length; i++) channel[i] = (Math.random() * 2 - 1) * (1 - i / length);
         const source = audioContext.createBufferSource();
         const gain = audioContext.createGain();
-        source.buffer = buffer; gain.gain.value = volume;
+        source.buffer = buffer; gain.gain.value = volume * effectsVolume / 100;
         source.connect(gain); gain.connect(audioContext.destination); source.start();
       } catch (_) { /* Audio is optional. */ }
     }
@@ -113,7 +126,7 @@
       if (!enabled || !unlocked || !files[name]) return;
       try {
         const audio = new Audio(files[name]);
-        audio.volume = volume;
+        audio.volume = volume * effectsVolume / 100;
         audio.play().catch(() => {});
       } catch (_) { /* Audio is optional. */ }
     }
@@ -132,6 +145,21 @@
         case "zombie": file("zombie", 0.48); break;
       }
     }
+    function setMusicVolume(value) {
+      musicVolume = Math.max(0, Math.min(100, Number(value) || 0));
+      localStorage.setItem("minecraft2d-music-volume", String(musicVolume));
+      if (music) {
+        music.volume = musicVolume / 100;
+        if (musicVolume === 0) music.pause();
+        else if (enabled && unlocked && music.paused) music.play().catch(() => {});
+      }
+      return musicVolume;
+    }
+    function setEffectsVolume(value) {
+      effectsVolume = Math.max(0, Math.min(100, Number(value) || 0));
+      localStorage.setItem("minecraft2d-effects-volume", String(effectsVolume));
+      return effectsVolume;
+    }
     function toggle() {
       enabled = !enabled;
       localStorage.setItem("minecraft2d-sound", enabled ? "on" : "off");
@@ -140,8 +168,9 @@
       updateButton();
       return enabled;
     }
+    function getVolumes() { return { music: musicVolume, effects: effectsVolume }; }
     updateButton();
-    return { unlock, play, toggle, isEnabled: () => enabled, updateButton };
+    return { unlock, play, toggle, setMusicVolume, setEffectsVolume, getVolumes, isEnabled: () => enabled, updateButton };
   })();
   const world = new World();
   const player = { x: 80, y: 0, width: 32, height: 72, vx: 0, vy: 0, onGround: false,
@@ -1677,6 +1706,23 @@
   });
   if (menuSaveButton) menuSaveButton.addEventListener("click", () => { Sound.unlock(); saveGame(true); });
   if (soundToggleButton) soundToggleButton.addEventListener("click", () => { Sound.toggle(); });
+  const initialAudioVolumes = Sound.getVolumes();
+  if (musicVolumeInput) {
+    musicVolumeInput.value = String(initialAudioVolumes.music);
+    if (musicVolumeValue) musicVolumeValue.textContent = `${initialAudioVolumes.music}%`;
+    musicVolumeInput.addEventListener("input", () => {
+      const value = Sound.setMusicVolume(musicVolumeInput.value);
+      if (musicVolumeValue) musicVolumeValue.textContent = `${value}%`;
+    });
+  }
+  if (effectsVolumeInput) {
+    effectsVolumeInput.value = String(initialAudioVolumes.effects);
+    if (effectsVolumeValue) effectsVolumeValue.textContent = `${initialAudioVolumes.effects}%`;
+    effectsVolumeInput.addEventListener("input", () => {
+      const value = Sound.setEffectsVolume(effectsVolumeInput.value);
+      if (effectsVolumeValue) effectsVolumeValue.textContent = `${value}%`;
+    });
+  }
   if (aboutToggleButton && aboutPanel) aboutToggleButton.addEventListener("click", () => {
     aboutPanel.hidden = !aboutPanel.hidden;
     aboutToggleButton.setAttribute("aria-expanded", aboutPanel.hidden ? "false" : "true");

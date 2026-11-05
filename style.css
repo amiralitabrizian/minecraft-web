@@ -687,6 +687,11 @@ body.needs-landscape #rotate-screen { display:flex; }
 .menu-buttons button:hover:not(:disabled) { filter:brightness(1.12); transform:translateY(-1px); }
 .menu-buttons button:disabled { opacity:.38; cursor:not-allowed; filter:grayscale(.6); }
 .sound-toggle { min-height:31px; padding:5px 12px; border:1px solid rgba(203,221,234,.24); border-radius:20px; background:rgba(9,18,29,.55); color:#d8e8ef; font-size:11px; }
+.audio-settings { width:100%; display:grid; gap:8px; padding:10px 12px; border:1px solid rgba(203,221,234,.16); border-radius:10px; background:rgba(7,15,25,.42); text-align:right; }
+.volume-control { display:grid; grid-template-columns:1fr auto; align-items:center; gap:5px 10px; color:#dce8ee; font:12px Tahoma,Arial,sans-serif; }
+.volume-control output { color:#9ee493; min-width:42px; text-align:left; font-variant-numeric:tabular-nums; }
+.volume-control input[type="range"] { grid-column:1 / -1; width:100%; min-height:24px; margin:0; accent-color:#8fe16b; cursor:pointer; touch-action:pan-y; }
+
 .menu-footer { margin-top:1px; color:#91a8b9; font-size:10px; }
 
 /* Touch devices have only movement and jump controls. World taps perform actions. */

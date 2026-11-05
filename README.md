@@ -1,4 +1,4 @@
-# Minecraft2D Web — Survival PWA (v29)
+# Minecraft2D Web — Survival PWA (v30)
 
 A browser-based, 2D block-world survival game. This project is separate from the original Python/Pygame game; its gameplay systems are being ported and adapted for desktop browsers and touch devices.
 
@@ -11,7 +11,7 @@ A browser-based, 2D block-world survival game. This project is separate from the
 - Crafting recipes for the crafting table, planks, sticks, furnace, and tools
 - Furnace input/fuel/output, coal fuel, and smelting for ores and raw food
 - Day/night cycle, sunrise/sunset, night and cave darkness, and torch lighting
-- Sheep, cows, zombies, skeletons, zombie melee attacks, skeleton arrows, and daytime burning for hostile mobs
+- Sheep, cows, zombies, skeletons, zombie melee attacks, skeleton arrows, and daytime burning for hostile mobs. Zombies and skeletons spawn at night; hostile mobs are cleared at sunrise
 - Health, hunger, food, regeneration, starvation, fall damage, death, dropped inventory, and respawn
 - Death screen, respawn with dropped inventory left in the world, and a menu exit path
 - Manual save/load and automatic local browser save
@@ -38,10 +38,9 @@ The web build follows the original game's main rules and data where possible, bu
 
 1. Open the published site over HTTPS.
 2. Rotate the phone to landscape; the app displays a landscape prompt in portrait mode.
-3. Use the left/right buttons and jump button to move.
-4. Tap a block to select it, then hold the mining button to break it.
-5. Use the place, attack, eat, and interact buttons for the corresponding actions.
-6. Use the Inventory and Craft buttons near the top-left for item management and crafting.
+3. Use the left/right buttons and jump button to move; there are no separate mobile buttons for mining, placing, attacking, eating, or interacting.
+4. Tap a mob to attack it, hold a block to mine it, tap a supported empty cell to place a block, and tap food/stations to use them.
+6. Use the Inventory and Craft buttons near the top-left for item management and crafting. Open Help for the touch-control guide.
 7. When the death screen appears, choose RESPAWN to continue in the same world or EXIT TO MENU to load/continue/start another world.
 
 Touch behavior and layout depend on the device/browser. The project has not been physically tested on every Android/iPhone model.
@@ -80,6 +79,14 @@ Original Python/Pygame project: https://github.com/amiralitabrizian/Minecraft2D
 
 Developed by Amir Ali Tabrizian.
 
+## Version 30 — Audio volume, hostile spawning and clock behavior
+
+- Added separate Music and Sound Effects volume sliders (0–100%) to the start menu. Both values persist in local storage and apply to background music, generated tones/noises, and file-based effects.
+- The default music volume remains 18% and the default sound-effects volume is 100%; a missing saved setting correctly uses these defaults.
+- Confirmed the night spawn system creates up to three zombies and two skeletons around the player. Zombies chase and attack at close range; skeletons keep distance and fire arrows. Hostiles are removed at sunrise and may burn in daylight when uncovered.
+- The in-game clock advances at the same rate as the Python GameTime class: one in-game minute per real second. It keeps advancing while gameplay is active, including while inventory/crafting panels are open, and pauses when the main menu/pause overlay is open.
+- Updated the service-worker cache and script/style query versions to v30.
+
 ## Version 29 — Torch rendering, item art, Help and save fixes
 
 - Fixed world rendering so non-solid torches are included in the visible block pass while collision remains solid-only.
@@ -102,7 +109,7 @@ This update focuses on a cleaner game screen and a closer match to the original 
 - Desktop keyboard and mouse controls remain available. Left mouse mines or attacks; right mouse places, eats, or interacts.
 - The HUD shows health, hunger, and an in-game clock. The sky changes through dawn, day, dusk, and night, with the sun and moon moving across the sky.
 - Block textures, ore details, the furnace, sheep, and cows have been redrawn in a more detailed pixel-art style.
-- Sound effects and background music are loaded from the `sounds/` folder. Browsers require a user gesture before music can start; use the sound button in the start menu to enable or disable audio.
+- Sound effects and background music are loaded from the `sounds/` folder. The start menu has independent music and sound-effect volume sliders (0–100%) plus a master sound toggle. Browsers require a user gesture before music can start.
 - The service-worker cache is versioned `minecraft-web-v28` and includes the local sound assets.
 
 ### Controls

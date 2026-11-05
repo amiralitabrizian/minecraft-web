@@ -7,13 +7,13 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <link rel="icon" type="image/png" sizes="32x32" href="./icons/icon-192.png?v=29">
-  <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png?v=29">
-  <link rel="apple-touch-icon" sizes="192x192" href="./icons/icon-192.png?v=29">
+  <link rel="icon" type="image/png" sizes="32x32" href="./icons/icon-192.png?v=30">
+  <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png?v=30">
+  <link rel="apple-touch-icon" sizes="192x192" href="./icons/icon-192.png?v=30">
   <meta name="description" content="Minecraft2D Web — a small block-based browser game">
   <title>Minecraft2D Web</title>
-  <link rel="manifest" href="./manifest.json?v=29">
-  <link rel="stylesheet" href="./style.css?v=29">
+  <link rel="manifest" href="./manifest.json?v=30">
+  <link rel="stylesheet" href="./style.css?v=30">
 </head>
 <body>
   <section id="rotate-screen" aria-live="polite">
@@ -82,6 +82,10 @@
         </div>
         <p id="menu-save-status" class="menu-save-status" role="status" aria-live="polite"></p>
         <button id="sound-toggle" class="sound-toggle" type="button">♫ صدا روشن</button>
+        <section class="audio-settings" aria-label="تنظیمات صدا">
+          <label class="volume-control" for="music-volume"><span>صدای موسیقی</span><output id="music-volume-value" for="music-volume">18%</output><input id="music-volume" type="range" min="0" max="100" step="1" value="18"></label>
+          <label class="volume-control" for="effects-volume"><span>صدای افکت‌ها</span><output id="effects-volume-value" for="effects-volume">100%</output><input id="effects-volume" type="range" min="0" max="100" step="1" value="100"></label>
+        </section>
         <button id="about-toggle" class="about-toggle" type="button" aria-expanded="false">دربارهٔ بازی و سازنده</button>
         <section id="about-panel" class="about-panel" hidden>
           <strong>سازنده: امیرعلی تبریزیان</strong>
@@ -97,12 +101,12 @@
       <div class="action-controls"><button id="jump-button" type="button" aria-label="پرش" title="پرش">▲</button></div>
     </nav>
   </main>
-  <script src="./world.js?v=29"></script>
-  <script src="./survival.js?v=29"></script>
-  <script src="./script.js?v=29"></script>
+  <script src="./world.js?v=30"></script>
+  <script src="./survival.js?v=30"></script>
+  <script src="./script.js?v=30"></script>
   <script>
     if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
-      window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js?v=29', { updateViaCache: 'none' }).then(registration => registration.update()).catch(err => console.warn('Service worker registration failed:', err)));
+      window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js?v=30', { updateViaCache: 'none' }).then(registration => registration.update()).catch(err => console.warn('Service worker registration failed:', err)));
     }
   </script>
 </body>
