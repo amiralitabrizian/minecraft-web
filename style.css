@@ -636,3 +636,149 @@ body.needs-landscape #rotate-screen { display:flex; }
   #touch-controls .move-controls,#touch-controls .action-controls { gap:2px; }
   .furnace-slot { width:22vw; max-width:90px; }
 }
+
+
+/* v28 polish — clean HUD, compact touch controls, consistent Minecraft-style panels. */
+#game-shell { background:#101c2b; }
+#top-hud { z-index:34; left:auto; right:10px; width:auto; max-width:calc(100% - 20px); pointer-events:none; }
+.hud-right { min-width:0; display:flex; flex-direction:row; align-items:center; gap:7px; pointer-events:none; }
+#clock-hud { display:flex; align-items:center; gap:7px; padding:6px 9px; min-width:106px; border:1px solid rgba(255,255,255,.22); border-radius:8px; background:rgba(13,21,32,.78); box-shadow:0 3px 12px rgba(0,0,0,.18); font-size:13px; }
+#clock-hud .clock-icon { color:#ffe28b; font-size:18px; line-height:1; }
+#clock-hud small { color:#b8d6eb; font-size:9px; letter-spacing:1px; }
+#vitals-hud { flex-direction:column; gap:2px; min-width:132px; padding:5px 7px; border:1px solid rgba(255,255,255,.2); border-radius:8px; background:rgba(13,21,32,.78); }
+.health-row,.hunger-row { justify-content:flex-end; gap:2px; }
+.stat-heart { font-size:13px; }
+.stat-food { font-size:11px; }
+#debug-status { display:none; }
+#help { max-width:55%; }
+.save-controls { pointer-events:auto; }
+.save-controls button { min-height:31px; padding:5px 9px; border:1px solid rgba(255,255,255,.25); border-radius:7px; background:rgba(13,21,32,.83); transition:background .15s, transform .15s; }
+.save-controls button:hover { background:#31465c; transform:translateY(-1px); }
+#quick-tools { position:absolute; z-index:36; top:max(10px,env(safe-area-inset-top,0px)); left:max(10px,env(safe-area-inset-left,0px)); display:flex; gap:6px; direction:ltr; }
+#quick-tools button { width:38px; height:36px; display:grid; place-items:center; padding:0; border:1px solid rgba(255,255,255,.26); border-radius:8px; background:rgba(13,21,32,.78); color:#f8fafc; font-size:18px; box-shadow:0 3px 10px rgba(0,0,0,.2); }
+#quick-tools button:hover { background:rgba(45,65,87,.94); }
+#quick-tools button:active { transform:translateY(1px); }
+#hotbar { z-index:32; border:1px solid rgba(226,232,240,.42); border-radius:8px; background:rgba(11,17,26,.86); box-shadow:0 4px 16px rgba(0,0,0,.26); }
+.inventory-slot { background:rgba(45,55,68,.94); border-color:#69798b; }
+.inventory-slot.selected { border:3px solid #ffdf70; background:rgba(106,91,47,.96); box-shadow:0 0 0 1px rgba(255,230,140,.35),0 0 12px rgba(255,216,100,.25); }
+#inventory-panel:not([hidden]) { z-index:70; border:1px solid #8595a8; border-radius:12px; background:rgba(15,23,42,.98); box-shadow:0 18px 55px rgba(0,0,0,.48); }
+#inventory-panel .inventory-title { color:#e5edf5; }
+.system-panel { z-index:72; border:1px solid rgba(205,220,238,.6); border-radius:12px; box-shadow:0 20px 60px rgba(0,0,0,.5); }
+.system-panel-head { background:linear-gradient(90deg,#263a50,#34475c); }
+.recipe-row { transition:background .12s,border-color .12s; }
+.recipe-row:hover { border-color:#a9c5dc; background:#2d4057; }
+.recipe-row.active { background:#4a482d; border-color:#f3d36c; }
+#craft-confirm { border-radius:8px; background:linear-gradient(#347b4d,#225838); }
+.furnace-slot { border-color:#64788c; background:linear-gradient(145deg,#33475c,#202d3e); }
+#death-panel { z-index:100; backdrop-filter:blur(4px); }
+#main-menu-panel { z-index:110; display:flex; align-items:center; justify-content:center; padding:18px; background:radial-gradient(ellipse at 50% 28%,rgba(84,133,150,.25),transparent 45%),linear-gradient(145deg,rgba(7,13,23,.91),rgba(7,13,23,.96)); backdrop-filter:blur(5px); }
+.main-menu-card { width:min(430px,calc(100vw - 32px)); padding:28px 30px 20px; display:flex; flex-direction:column; align-items:center; gap:12px; border:1px solid rgba(203,221,234,.43); border-radius:18px; background:linear-gradient(155deg,rgba(37,54,71,.97),rgba(15,27,42,.98)); box-shadow:0 24px 80px rgba(0,0,0,.56),inset 0 1px rgba(255,255,255,.09); color:#f8fafc; text-align:center; }
+.menu-emblem { width:62px; height:62px; position:relative; overflow:hidden; border:3px solid #182a26; border-radius:10px; transform:rotate(-4deg); box-shadow:0 7px 0 rgba(0,0,0,.22); background:#85512f; }
+.menu-grass { position:absolute; inset:0 0 auto; height:22px; background:linear-gradient(#9ce45d 0 33%,#4d9d35 34% 100%); }
+.menu-dirt { position:absolute; inset:22px 0 0; background:repeating-linear-gradient(135deg,#86502e 0 8px,#9b6038 8px 13px,#754327 13px 17px); }
+.menu-eyebrow { color:#a9c4d4; font-size:9px; font-weight:bold; letter-spacing:2.8px; }
+.main-menu-card h1 { margin:0; color:#f5f8ee; font-size:clamp(26px,6vw,38px); letter-spacing:1px; text-shadow:0 3px #17232b; }
+.main-menu-card h1 b { color:#8fe16b; }
+.menu-subtitle { margin:0 0 5px; color:#c3d4df; font-size:14px; }
+.menu-buttons { width:100%; display:grid; gap:8px; }
+.menu-buttons button { width:100%; min-height:43px; border:1px solid rgba(209,229,238,.33); border-radius:8px; background:linear-gradient(#3d607a,#2c455c); color:#fff; font: bold 14px Tahoma,Arial,sans-serif; box-shadow:0 3px 0 #172a39; transition:filter .15s,transform .15s; }
+.menu-buttons button:first-child { background:linear-gradient(#62a74e,#36733d); box-shadow:0 3px 0 #244b2b; }
+.menu-buttons button:nth-child(3) { background:linear-gradient(#a66c3b,#70452d); box-shadow:0 3px 0 #4d3021; }
+.menu-buttons button:hover:not(:disabled) { filter:brightness(1.12); transform:translateY(-1px); }
+.menu-buttons button:disabled { opacity:.38; cursor:not-allowed; filter:grayscale(.6); }
+.sound-toggle { min-height:31px; padding:5px 12px; border:1px solid rgba(203,221,234,.24); border-radius:20px; background:rgba(9,18,29,.55); color:#d8e8ef; font-size:11px; }
+.menu-footer { margin-top:1px; color:#91a8b9; font-size:10px; }
+
+/* Touch devices have only movement and jump controls. World taps perform actions. */
+@media (pointer:coarse), (hover:none), (max-width:700px) {
+  #top-hud { top:max(7px,env(safe-area-inset-top,0px)); right:7px; left:auto; max-width:calc(100% - 120px); }
+  .hud-right { flex-direction:row; align-items:center; gap:4px; }
+  #help,#debug-status,.save-controls { display:none !important; }
+  #clock-hud { min-width:auto; gap:5px; padding:4px 6px; font-size:11px; }
+  #clock-hud .clock-icon { font-size:15px; }
+  #clock-hud small { font-size:8px; }
+  #vitals-hud { min-width:0; padding:3px 5px; gap:0; }
+  .health-row,.hunger-row { gap:1px; min-height:11px; line-height:11px; }
+  .stat-heart { font-size:10px; }
+  .stat-food { font-size:9px; }
+  #quick-tools { top:max(7px,env(safe-area-inset-top,0px)); left:7px; gap:4px; }
+  #quick-tools button { width:33px; height:31px; border-radius:7px; font-size:16px; }
+  #touch-controls { display:block !important; position:absolute; inset:auto 0 calc(5px + env(safe-area-inset-bottom,0px)) 0; height:43px; z-index:35; pointer-events:none; }
+  #touch-controls .move-controls { position:absolute; left:max(7px,env(safe-area-inset-left,0px)); bottom:0; display:flex; gap:5px; pointer-events:auto; }
+  #touch-controls .action-controls { position:absolute; right:max(8px,env(safe-area-inset-right,0px)); bottom:0; display:flex; gap:5px; pointer-events:auto; }
+  #touch-controls button { display:grid; place-items:center; width:39px; min-width:39px; height:40px; min-height:40px; padding:0; border:1px solid rgba(240,248,255,.32); border-radius:9px; background:rgba(18,31,45,.66); color:#fff; font-size:17px; box-shadow:0 2px 8px rgba(0,0,0,.22); backdrop-filter:blur(3px); }
+  #touch-controls button:active { background:rgba(73,112,139,.9); transform:scale(.96); }
+  #hotbar { bottom:calc(52px + env(safe-area-inset-bottom,0px)) !important; gap:2px; padding:3px; max-width:calc(100vw - 12px); }
+  .inventory-slot { width:clamp(27px,4.1vw,35px); height:clamp(29px,4.4vw,37px); }
+  .slot-icon { width:17px; height:17px; left:calc(50% - 8.5px); top:7px; }
+  .slot-number { font-size:7px; }
+  .slot-count { font-size:9px; }
+  #inventory-panel:not([hidden]) { width:min(420px,calc(100vw - 18px)); max-height:calc(100dvh - 76px); top:50%; transform:translate(-50%,-50%); overflow:auto; padding:9px; }
+  .inventory-grid { gap:3px; }
+  .inventory-grid .inventory-slot { width:100%; height:auto; aspect-ratio:1; }
+  .system-panel { width:calc(100vw - 12px); max-height:calc(100dvh - 16px); }
+  .system-panel-body { grid-template-columns:minmax(104px,.8fr) minmax(145px,1.2fr); }
+  .main-menu-card { width:min(390px,calc(100vw - 24px)); padding:17px 20px 13px; gap:8px; border-radius:14px; }
+  .menu-emblem { width:43px; height:43px; }
+  .menu-grass { height:16px; }
+  .menu-dirt { inset:16px 0 0; }
+  .menu-eyebrow { font-size:8px; letter-spacing:2px; }
+  .main-menu-card h1 { font-size:clamp(24px,5vw,31px); }
+  .menu-subtitle { font-size:12px; }
+  .menu-buttons { gap:6px; }
+  .menu-buttons button { min-height:37px; font-size:12px; }
+  .sound-toggle { min-height:28px; }
+}
+@media (orientation:landscape) and (max-height:430px) {
+  #touch-controls { height:38px; bottom:calc(4px + env(safe-area-inset-bottom,0px)); }
+  #touch-controls button { width:35px; min-width:35px; height:36px; min-height:36px; }
+  #hotbar { bottom:calc(43px + env(safe-area-inset-bottom,0px)) !important; }
+  .inventory-slot { width:30px; height:31px; }
+  .slot-icon { width:15px; height:15px; top:7px; left:calc(50% - 7.5px); }
+  .main-menu-card { padding:12px 18px 9px; gap:5px; }
+  .menu-emblem { width:34px; height:34px; }
+  .menu-grass { height:12px; }
+  .menu-dirt { inset:12px 0 0; }
+  .main-menu-card h1 { font-size:24px; }
+  .menu-buttons { grid-template-columns:1fr 1fr; gap:6px; }
+  .menu-buttons button { min-height:34px; font-size:11px; }
+  .menu-subtitle { margin:0; }
+}
+@media (max-width:520px) and (orientation:landscape) {
+  #top-hud { max-width:calc(100% - 105px); }
+  #clock-hud { padding:3px 5px; }
+  #vitals-hud { transform:scale(.92); transform-origin:right top; }
+  #touch-controls button { width:32px; min-width:32px; height:34px; min-height:34px; }
+  #hotbar { max-width:calc(100vw - 8px); }
+  .inventory-slot { width:clamp(24px,5.9vw,29px); height:29px; }
+}
+
+/* v28.1 — keep the three quick actions in one compact row. */
+#quick-tools #inventory-toggle,
+#quick-tools #crafting-toggle,
+#quick-tools #pause-menu-button {
+  position:static !important;
+  inset:auto !important;
+  margin:0 !important;
+  transform:none;
+  min-width:33px;
+  width:38px;
+  height:36px;
+  padding:0 !important;
+}
+#quick-tools { align-items:center; flex-direction:row; }
+/* Save/load/new-world actions live in the start menu, avoiding duplicate HUD buttons. */
+#top-hud #help,
+#top-hud .save-controls { display:none !important; }
+#top-hud { right:10px; left:auto; width:auto; }
+.hud-right { flex-direction:row; align-items:center; }
+@media (pointer:coarse), (hover:none), (max-width:700px) {
+  #quick-tools #inventory-toggle,
+  #quick-tools #crafting-toggle,
+  #quick-tools #pause-menu-button {
+    width:33px;
+    min-width:33px;
+    height:31px;
+  }
+  #top-hud { right:7px; left:auto; }
+}

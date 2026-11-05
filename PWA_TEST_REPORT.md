@@ -1,30 +1,35 @@
-# Minecraft2D Web PWA v27 — Verification Report
+# Minecraft2D Web — v28 Test Report
 
-## Automated checks completed locally
+## Automated checks completed
 
-- `node --check` — passed for `script.js`, `world.js`, `survival.js`, and `sw.js`.
-- World test — passed: 8 chunks generated, terrain surface and dirt layers exist, ore blocks are generated, chunk edits persist across unload/reload, and save data restores edits.
-- Game clock — passed: 06:00 daytime start, 05:00 sunrise boundary, 20:00 night boundary, and reduced night light.
-- Crafting data — passed: crafting table recipe is available without an existing table; the remaining recipes are marked as requiring a table.
-- Tool data — passed: durability metadata is present for all wooden, iron, gold, and diamond pickaxes, axes, and swords.
-- Mob data — passed: hostile spawn limits are bounded to 3 zombies and 2 skeletons; the system includes sheep/cow, zombie chase/melee, skeleton projectiles, and hostile daytime burning.
-- Survival data — passed: exact food values are present for raw/cooked beef and mutton; health, hunger, regeneration, starvation, and fall-damage systems are wired into the game loop.
-- Furnace test — passed: one coal fuel stack drives the 4-second smelting cycle and converts iron ore into an iron ingot.
-- PWA shell — cache version is `minecraft-web-v27`; HTML, CSS, JavaScript, manifest, and all three app icons are included in precache. Cache lookup ignores query strings so `?v=27` asset URLs can match the cached base paths.
+- JavaScript syntax validation (`node --check`) for `script.js`, `survival.js`, `world.js`, and `sw.js`.
+- Embedded-browser smoke test in Chromium at desktop viewport (1365×768) and mobile landscape viewport (844×390, touch emulation).
+- Both layouts loaded the game canvas and start menu without JavaScript page errors.
+- New World menu action opened the game successfully; the HUD clock displayed `06:00 DAY`.
+- Menu Save and Load buttons were exercised; the saved state was present in local storage and Load returned to gameplay.
+- Inventory and Crafting panels opened successfully; Pause returned to the menu.
+- No JavaScript page errors occurred during those interactions.
+- Mobile touch-control markup contains exactly three buttons: left, right, and jump. The quick menu contains three buttons: menu, inventory, and crafting.
+- Checked that the v28 sound assets exist and are referenced by the service-worker precache list.
+- Checked HTML IDs for duplicates and validated local asset references.
+- Node-level checks passed for terrain generation, chunk-edit persistence, day/night phase, mob health reduction, and iron smelting in the furnace.
+- CSS was parsed with no stylesheet syntax errors.
 
-## Not yet verified
+## Not verified on physical hardware
 
-- Full interactive browser session: the headless Chromium process in this environment did not complete, so no browser-runtime pass is claimed.
-- Physical Android models, Samsung Internet, iPhone Safari, and different screen aspect ratios.
-- GitHub Pages deployment, installed shortcut icon behavior, real offline launch, and browser storage quota behavior.
-- Full end-to-end interaction of the death/menu/load flow in a real browser.
+No physical Android phone, iPhone, tablet, or laptop browser was available for this run. The browser test used Chromium with desktop and mobile viewport/touch emulation. It does not prove compatibility with every mobile browser or device, and it does not fully test real touch timing, audio autoplay policies, offline installation, or device storage quotas.
 
-## Manual device test checklist
+## Manual device checks before release
 
-1. Open the HTTPS page in a desktop browser and verify movement, jump, mining, placement, inventory, crafting, furnace, mobs, eating, save, and load.
-2. On Android Chrome in landscape, test every touch control and open/close each panel.
-3. Test a smaller screen and a low-memory phone; check that hotbar and touch controls do not cover the player or collide with each other.
-4. Reload after saving and confirm terrain edits, inventory, player status, mobs, clock, and furnace contents persist.
-5. Open once online, then relaunch in airplane mode.
+1. Test touch movement, jumping, mob tapping/attacks, block mining, and block placement on at least one Android phone in landscape.
+2. Test Safari on iPhone if iOS is a target.
+3. Confirm that music and effects start after the first touch and that the sound toggle persists.
+4. Save, reload the page, and load the saved world on the same device.
+5. Install the PWA, open it offline, and verify that the game, icons, and sound effects load.
+6. Check the crafting and furnace panels on a small landscape screen so their buttons remain reachable.
 
-**Important:** passing the local code/data checks does not guarantee zero bugs on every phone or laptop. Real-device tests are still required.
+## Notes
+
+- The save is local to the current browser/device; it is not cloud-synced.
+- The browser may require a first user interaction before allowing background music.
+- v28 uses local sound files under `sounds/` and a new cache name, `minecraft-web-v28`.

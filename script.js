@@ -31,12 +31,112 @@
   const touchAttackButton = document.getElementById("touch-attack-button");
   const touchEatButton = document.getElementById("touch-eat-button");
   const touchInteractButton = document.getElementById("touch-interact-button");
+  const pauseMenuButton = document.getElementById("pause-menu-button");
+  const menuSaveButton = document.getElementById("menu-save-button");
+  const soundToggleButton = document.getElementById("sound-toggle");
 
   if (!canvas || !ctx || !window.MinecraftWorld || !window.MinecraftSystems) throw new Error("Game setup failed. Check index.html, world.js and survival.js.");
 
   const { World, BLOCK_SIZE, COLORS, rectanglesOverlap, surfaceY } = window.MinecraftWorld;
   const Systems = window.MinecraftSystems;
   const { TOOL_INFO, RECIPES, ITEM_NAMES, FOOD_VALUES, SMELT_RECIPES, BLOCK_HARDNESS, GameClock, MobSystem, furnaceState, updateFurnace } = Systems;
+
+  // Sound is unlocked only after the first user gesture (browser autoplay policy).
+  const Sound = (() => {
+    let enabled = localStorage.getItem("minecraft2d-sound") !== "off";
+    let unlocked = false;
+    let audioContext = null;
+    let music = null;
+    const files = {
+      food: "./sounds/food.mp3",
+      sheep: "./sounds/sheep-hit.mp3",
+      cow: "./sounds/cow-hit.mp3",
+      zombie: "./sounds/zombie.mp3"
+    };
+    function updateButton() {
+      if (soundToggleButton) soundToggleButton.textContent = enabled ? "♫ صدا روشن" : "♫ صدا خاموش";
+    }
+    function startMusic() {
+      if (!enabled || !unlocked) return;
+      if (!music) {
+        music = new Audio("./sounds/background_music.mp3");
+        music.loop = true;
+        music.preload = "none";
+        music.volume = 0.18;
+      }
+      if (music.paused) music.play().catch(() => {});
+    }
+    function unlock() {
+      unlocked = true;
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (AudioContextClass && !audioContext) {
+        try { audioContext = new AudioContextClass(); } catch (_) { audioContext = null; }
+      }
+      if (audioContext && audioContext.state === "suspended") audioContext.resume().catch(() => {});
+      startMusic();
+    }
+    function tone(frequency, duration = 0.08, wave = "square", volume = 0.045, endFrequency = null) {
+      if (!enabled || !audioContext) return;
+      try {
+        const now = audioContext.currentTime;
+        const oscillator = audioContext.createOscillator();
+        const gain = audioContext.createGain();
+        oscillator.type = wave;
+        oscillator.frequency.setValueAtTime(Math.max(35, frequency), now);
+        if (endFrequency) oscillator.frequency.exponentialRampToValueAtTime(Math.max(35, endFrequency), now + duration);
+        gain.gain.setValueAtTime(volume, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+        oscillator.connect(gain); gain.connect(audioContext.destination);
+        oscillator.start(now); oscillator.stop(now + duration);
+      } catch (_) { /* Audio is optional; never interrupt gameplay. */ }
+    }
+    function noise(duration = 0.075, volume = 0.045) {
+      if (!enabled || !audioContext) return;
+      try {
+        const length = Math.max(1, Math.floor(audioContext.sampleRate * duration));
+        const buffer = audioContext.createBuffer(1, length, audioContext.sampleRate);
+        const channel = buffer.getChannelData(0);
+        for (let i = 0; i < length; i++) channel[i] = (Math.random() * 2 - 1) * (1 - i / length);
+        const source = audioContext.createBufferSource();
+        const gain = audioContext.createGain();
+        source.buffer = buffer; gain.gain.value = volume;
+        source.connect(gain); gain.connect(audioContext.destination); source.start();
+      } catch (_) { /* Audio is optional. */ }
+    }
+    function file(name, volume = 0.55) {
+      if (!enabled || !unlocked || !files[name]) return;
+      try {
+        const audio = new Audio(files[name]);
+        audio.volume = volume;
+        audio.play().catch(() => {});
+      } catch (_) { /* Audio is optional. */ }
+    }
+    function play(kind) {
+      if (!enabled || !unlocked) return;
+      switch (kind) {
+        case "break": noise(0.09, 0.07); tone(120, 0.07, "triangle", 0.025, 65); break;
+        case "place": tone(245, 0.07, "square", 0.035, 180); break;
+        case "pickup": tone(620, 0.07, "sine", 0.045, 880); break;
+        case "jump": tone(260, 0.11, "triangle", 0.035, 430); break;
+        case "attack": tone(190, 0.06, "sawtooth", 0.035, 95); break;
+        case "hurt": tone(115, 0.16, "sawtooth", 0.055, 55); break;
+        case "food": file("food", 0.55); tone(580, 0.07, "sine", 0.018, 760); break;
+        case "sheep": file("sheep", 0.65); break;
+        case "cow": file("cow", 0.65); break;
+        case "zombie": file("zombie", 0.48); break;
+      }
+    }
+    function toggle() {
+      enabled = !enabled;
+      localStorage.setItem("minecraft2d-sound", enabled ? "on" : "off");
+      if (!enabled && music) music.pause();
+      if (enabled) unlock();
+      updateButton();
+      return enabled;
+    }
+    updateButton();
+    return { unlock, play, toggle, isEnabled: () => enabled, updateButton };
+  })();
   const world = new World();
   const player = { x: 80, y: 0, width: 32, height: 72, vx: 0, vy: 0, onGround: false,
     health: 20, maxHealth: 20, hunger: 20, maxHunger: 20, hungerTimer: 0, starvationTimer: 0,
@@ -74,6 +174,7 @@
   let dragStartPoint = null;
   let pendingTouchMoveIndex = null;
   let suppressSlotClick = false;
+  let lastFoodTap = { index: -1, time: 0 };
   const STACK_LIMIT = 64;
   const PLACEABLE_TYPES = new Set(["grass", "dirt", "stone", "wood", "leaves", "leaf", "coal", "iron", "gold", "diamond", "torch", "crafting_table", "furnace", "planks"]);
   const NON_DROPPABLE_WITHOUT_PICKAXE = new Set(["stone", "coal", "iron", "gold", "diamond"]);
@@ -179,6 +280,7 @@
     if (player.onGround) {
       player.vy = -JUMP_SPEED;
       player.onGround = false;
+      Sound.play("jump");
       setStatus("پرش!");
       console.log("[JUMP]", source);
     }
@@ -259,7 +361,7 @@
     pointerWorld = screenToWorld(event);
     const block = blockAtPoint(pointerWorld);
 
-    // Desktop: left-click mines blocks or attacks a mob; right-click uses stations or places blocks.
+    // Desktop keeps the familiar mouse scheme: hold left to mine/hit, right to use/place.
     if (event.pointerType === "mouse") {
       event.preventDefault();
       if (event.button === 0) {
@@ -277,16 +379,31 @@
       return;
     }
 
-    // Touch: tap selects a block or mob; action buttons perform the selected action.
+    // Mobile: no extra attack/break/place buttons. Tap a mob to hit it,
+    // hold a block to mine it, tap a station to open it, and tap an empty
+    // adjacent cell to place the selected block.
+    event.preventDefault();
+    try { canvas.setPointerCapture(event.pointerId); } catch (_) {}
+    const mobHere = mobs.entities.find(m => m.alive && pointerWorld.x >= m.x && pointerWorld.x <= m.x + m.width && pointerWorld.y >= m.y && pointerWorld.y <= m.y + m.height);
+    if (mobHere) {
+      selectedBlock = null; hoveredBlock = null;
+      attackAtPointer();
+      render();
+      return;
+    }
     if (block && isInReach(block)) {
-      selectedBlock = block;
-      setStatus(block.type === "bedrock" ? "سنگ‌بستر قابل شکستن نیست" : `انتخاب شد: ${typeName(block.type)}`);
+      if (block.type === "crafting_table" || block.type === "furnace") {
+        interactAtWorldPoint(pointerWorld);
+      } else {
+        selectedBlock = block;
+        hoveredBlock = block;
+        startBreaking(block);
+      }
     } else {
       selectedBlock = null;
-      const mobHere = mobs.entities.find(m => m.alive && pointerWorld.x >= m.x && pointerWorld.x <= m.x + m.width && pointerWorld.y >= m.y && pointerWorld.y <= m.y + m.height);
-      setStatus(mobHere ? `موجود انتخاب شد: ${mobHere.kind}` : "بلاکی یا موجودی در این نقطه نیست");
+      hoveredBlock = null;
+      placeAtWorldPoint(pointerWorld);
     }
-    hoveredBlock = block && isInReach(block) ? block : null;
     render();
   }
 
@@ -338,7 +455,16 @@
           swapSlots(index, selectedSlot);
         }
       } else if (index < 9) {
+        const now = performance.now();
+        const isTouch = matchMedia("(pointer: coarse)").matches || navigator.maxTouchPoints > 0;
+        const isFood = inventory[index] && FOOD_VALUES[inventory[index].type];
+        if (isTouch && selectedSlot === index && isFood && lastFoodTap.index === index && now - lastFoodTap.time < 420) {
+          lastFoodTap = { index: -1, time: 0 };
+          eatSelectedFood();
+          return;
+        }
         selectedSlot = index;
+        lastFoodTap = { index, time: now };
         renderInventory();
         setStatus(inventory[index] ? `Selected: ${typeName(inventory[index].type)} ×${inventory[index].count}` : "Empty hotbar slot");
       } else {
@@ -490,6 +616,7 @@
       const dy = player.y + player.height / 2 - (drop.y + 9);
       if (player.alive && Math.hypot(dx, dy) < 58) {
         const added = addItemPartial(drop.type, drop.count || 1, drop.durability ?? null);
+        if (added > 0) Sound.play("pickup");
         drop.count = Math.max(0, (drop.count || 1) - added);
         if (drop.count <= 0) {
           drops.splice(i, 1);
@@ -530,6 +657,7 @@
       if (stack.durability <= 0) { inventory[selectedSlot] = null; setStatus(`${typeName(stack.type)} شکست`); }
     }
     world.removeBlock(target);
+    Sound.play("break");
     if (selectedBlock === target) selectedBlock = null;
     if (hoveredBlock === target) hoveredBlock = null;
     breakState = null;
@@ -617,6 +745,7 @@
     const newBlock = world.addBlock(placeAt.x, placeAt.y, type);
     if (newBlock) {
       consumeSelectedItem();
+      Sound.play("place");
       selectedBlock = newBlock;
       hoveredBlock = newBlock;
       setStatus(`${typeName(type)} قرار داده شد`);
@@ -650,6 +779,7 @@
     const newBlock = world.addBlock(placeAt.x, placeAt.y, type);
     if (newBlock) {
       consumeSelectedItem();
+      Sound.play("place");
       selectedBlock = newBlock;
       hoveredBlock = newBlock;
       setStatus(`${typeName(type)} قرار داده شد`);
@@ -682,11 +812,15 @@
       const food = Array.from({ length: 10 }, (_, i) => `<span class="stat-food ${player.hunger >= (i + 1) * 2 ? "full" : player.hunger > i * 2 ? "half" : "empty"}">◆</span>`).join("");
       vitalsElement.innerHTML = `<div class="health-row" aria-label="Health ${player.health} of 20">${hearts}</div><div class="hunger-row" aria-label="Hunger ${player.hunger} of 20">${food}</div>`;
     }
-    if (clockElement) clockElement.textContent = `${clock.text} · ${clock.phase === "night" ? "Night" : clock.phase === "sunrise" ? "Sunrise" : clock.phase === "sunset" ? "Sunset" : "Day"}`;
+    if (clockElement) {
+      const phase = clock.phase === "night" ? "NIGHT" : clock.phase === "sunrise" ? "DAWN" : clock.phase === "sunset" ? "DUSK" : "DAY";
+      clockElement.innerHTML = `<span class="clock-icon">${clock.phase === "night" ? "☾" : "☀"}</span><span>${clock.text}</span><small>${phase}</small>`;
+    }
   }
   function damagePlayer(amount, source = "") {
     if (!player.alive || amount <= 0) return;
     player.health = Math.max(0, player.health - amount); player.damageTimer = .3;
+    Sound.play("hurt");
     if (source) setStatus(`${source}: ${amount} damage`);
     if (player.health <= 0) onPlayerDeath();
     renderHud();
@@ -709,6 +843,7 @@
     if (!value) { setStatus("در خانهٔ انتخاب‌شده غذا نیست"); return false; }
     player.hunger = Math.min(player.maxHunger, player.hunger + value); player.health = Math.min(player.maxHealth, player.health + 2);
     stack.count--; if (stack.count <= 0) inventory[selectedSlot] = null; eatCooldown = .38;
+    Sound.play("food");
     renderInventory(); renderHud(); setStatus(`${typeName(stack.type)} خورده شد`); return true;
   }
   function canFitItem(type, count = 1) {
@@ -797,17 +932,22 @@
   function attackAtPointer() {
     if (!pointerWorld || !player.alive || anyPanelOpen()) return false;
     const stack = selectedStack(), tool = selectedToolInfo(); const damage = tool && tool.kind === "sword" ? tool.damage : 5;
+    const target = mobs.entities.find(m => m.alive && pointerWorld.x >= m.x && pointerWorld.x <= m.x + m.width && pointerWorld.y >= m.y && pointerWorld.y <= m.y + m.height);
     const hit = mobs.hitAt(pointerWorld.x, pointerWorld.y, player, damage, onMobDeath);
     if (hit) {
+      Sound.play("attack");
+      if (target && target.kind === "sheep") Sound.play("sheep");
+      if (target && target.kind === "cow") Sound.play("cow");
+      if (target && target.kind === "zombie") Sound.play("zombie");
       if (tool && tool.kind === "sword" && stack) { stack.durability--; if (stack.durability <= 0) inventory[selectedSlot] = null; renderInventory(); }
       setStatus("حمله انجام شد"); return true;
     }
     setStatus("موجودی در این نقطه نیست یا از دسترس دور است"); return false;
   }
   function onMobDeath(mob) {
-    if (mob.kind === "sheep") { drops.push({ type: "mutton", count: 1, x: mob.x + 10, y: mob.y + 18, vx: 0, vy: -80, age: 0 }); drops.push({ type: "wool", count: 1, x: mob.x + 24, y: mob.y + 12, vx: 0, vy: -80, age: 0 }); }
-    else if (mob.kind === "cow") drops.push({ type: "meat", count: 3, x: mob.x + 15, y: mob.y + 18, vx: 0, vy: -80, age: 0 });
-    else if (mob.kind === "zombie") drops.push({ type: "zombie_meat", count: 1, x: mob.x + 12, y: mob.y + 18, vx: 0, vy: -80, age: 0 });
+    if (mob.kind === "sheep") { Sound.play("sheep"); drops.push({ type: "mutton", count: 1, x: mob.x + 10, y: mob.y + 18, vx: 0, vy: -80, age: 0 }); drops.push({ type: "wool", count: 1, x: mob.x + 24, y: mob.y + 12, vx: 0, vy: -80, age: 0 }); }
+    else if (mob.kind === "cow") { Sound.play("cow"); drops.push({ type: "meat", count: 3, x: mob.x + 15, y: mob.y + 18, vx: 0, vy: -80, age: 0 }); }
+    else if (mob.kind === "zombie") { Sound.play("zombie"); drops.push({ type: "zombie_meat", count: 1, x: mob.x + 12, y: mob.y + 18, vx: 0, vy: -80, age: 0 }); }
     else drops.push({ type: "bone", count: 1, x: mob.x + 12, y: mob.y + 18, vx: 0, vy: -80, age: 0 });
     setStatus(`${mob.kind} شکست خورد`);
   }
@@ -837,9 +977,39 @@
     deathShown = false; if (deathPanel) deathPanel.hidden = true; cameraInitialized = false; updateCamera(true); renderHud();
     setStatus("Respawned — your dropped items are still in the world");
   }
+  function refreshMenuButtons() {
+    const hasSave = !!localStorage.getItem("minecraft2d-web-save-v3");
+    if (menuContinueButton) menuContinueButton.disabled = !hasSave;
+    if (menuLoadButton) menuLoadButton.disabled = !hasSave;
+    if (menuSaveButton) menuSaveButton.disabled = !hasSave;
+  }
+  function startNewWorld() {
+    localStorage.removeItem("minecraft2d-web-save-v3");
+    world.importChanges([], 80);
+    player.x = 80; player.y = surfaceY(player.x) - player.height;
+    player.vx = 0; player.vy = 0; player.onGround = false;
+    player.health = 20; player.hunger = 20; player.hungerTimer = 0;
+    player.starvationTimer = 0; player.regenTimer = 0; player.fallStartY = null;
+    player.alive = true; player.damageTimer = 0;
+    inventory.fill(null); inventory[0] = { type: "torch", count: 16 };
+    selectedSlot = 0; drops.length = 0; furnaces.clear();
+    mobs.entities.length = 0; mobs.arrows.length = 0; mobs.spawnTimer = 0; mobs.wasNight = false; mobs.attackCooldown = 0;
+    clock.minutes = 360; selectedBlock = null; hoveredBlock = null; pointerWorld = null;
+    activeStationKey = null; activeStationType = null; activeCraftingRecipe = 0;
+    deathShown = false; inventoryOpen = false;
+    if (deathPanel) deathPanel.hidden = true;
+    if (mainMenuPanel) mainMenuPanel.hidden = true;
+    closeAllPanels();
+    cameraInitialized = false; updateCamera(true);
+    renderInventory(); renderHud();
+    autoSaveTimer = 0; saveGame(false); refreshMenuButtons();
+    Sound.unlock();
+    setStatus("جهان تازه ساخته شد؛ ماجراجویی شروع شد");
+  }
+
   function saveGame(showMessage = true) {
     const data = { version: 3, world: world.exportChanges(), player: { x: player.x, y: player.y, vy: player.vy, onGround: player.onGround, health: player.health, hunger: player.hunger, hungerTimer: player.hungerTimer, starvationTimer: player.starvationTimer, regenTimer: player.regenTimer, fallStartY: player.fallStartY, alive: player.alive }, inventory, selectedSlot, drops, clock: clock.minutes, mobs: mobs.save(), furnaces: [...furnaces.entries()] };
-    try { localStorage.setItem("minecraft2d-web-save-v3", JSON.stringify(data)); if (showMessage) setStatus("بازی ذخیره شد"); return true; }
+    try { localStorage.setItem("minecraft2d-web-save-v3", JSON.stringify(data)); refreshMenuButtons(); if (showMessage) setStatus("بازی ذخیره شد"); return true; }
     catch (error) { console.warn("Save failed", error); if (showMessage) setStatus("ذخیره‌سازی در این مرورگر در دسترس نیست"); return false; }
   }
   function loadGame(showMessage = true) {
@@ -859,6 +1029,7 @@
       activeStationKey = null; activeStationType = null; closeAllPanels();
       if (Array.isArray(data.furnaces)) for (const pair of data.furnaces) if (Array.isArray(pair) && pair.length === 2 && pair[1] && typeof pair[1] === "object") furnaces.set(String(pair[0]), { ...furnaceState(), ...pair[1] });
       deathShown = !player.alive; if (deathPanel) deathPanel.hidden = !deathShown; cameraInitialized = false; updateCamera(true); renderInventory(); renderHud();
+      refreshMenuButtons();
       if (showMessage) setStatus("بازی بارگذاری شد"); return true;
     } catch (error) { console.warn("Load failed", error); if (showMessage) setStatus("فایل ذخیره خراب یا ناسازگار است"); return false; }
   }
@@ -886,6 +1057,7 @@
   }
 
   function update(dt) {
+    if (mainMenuPanel && !mainMenuPanel.hidden) return;
     clock.update(dt);
     hudRefreshTimer += dt; if (hudRefreshTimer >= .2) { hudRefreshTimer = 0; renderHud(); }
     eatCooldown = Math.max(0, eatCooldown - dt);
@@ -951,99 +1123,199 @@
     const x = Math.round(block.x - camera.x);
     const y = Math.round(block.y - camera.y);
     if (x < -BLOCK_SIZE || x > width || y < -BLOCK_SIZE || y > height) return;
-    const colors = COLORS[block.type] || COLORS.dirt;
+    const type = block.type;
+    const colors = COLORS[type] || COLORS.dirt;
+    const seedBase = (Math.imul(Math.floor(block.x / BLOCK_SIZE) | 0, 73856093) ^ Math.imul(Math.floor(block.y / BLOCK_SIZE) | 0, 19349663)) >>> 0;
+    let seed = seedBase || 1;
+    const rand = () => { seed ^= seed << 13; seed ^= seed >>> 17; seed ^= seed << 5; return (seed >>> 0) / 4294967296; };
+    const specks = (count, palette, minSize = 2, maxSize = 5) => {
+      for (let i = 0; i < count; i++) {
+        const px = x + 3 + Math.floor(rand() * 33), py = y + 3 + Math.floor(rand() * 33);
+        const size = minSize + Math.floor(rand() * (maxSize - minSize + 1));
+        ctx.fillStyle = palette[Math.floor(rand() * palette.length)];
+        ctx.fillRect(px, py, size, Math.max(2, size - 1));
+      }
+    };
+
+    ctx.save();
+    // Dark side face and subtle top highlight give every cube a consistent 2D volume.
     ctx.fillStyle = colors.side;
     ctx.fillRect(x, y, BLOCK_SIZE, BLOCK_SIZE);
-    ctx.fillStyle = colors.top;
-    ctx.fillRect(x + 1, y + 1, BLOCK_SIZE - 2, 9);
-    ctx.fillStyle = colors.detail;
-    // Repeatable pixel-like specks instead of one single ground image.
-    for (let i = 0; i < 5; i++) {
-      const px = x + 5 + ((block.x / BLOCK_SIZE * 13 + i * 11) % 29 + 29) % 29;
-      const py = y + 14 + ((block.y / BLOCK_SIZE * 7 + i * 9) % 21 + 21) % 21;
-      ctx.fillRect(px, py, 3, 3);
+    ctx.fillStyle = "rgba(255,255,255,.08)"; ctx.fillRect(x + 1, y + 1, BLOCK_SIZE - 2, 2);
+    ctx.fillStyle = "rgba(0,0,0,.12)"; ctx.fillRect(x + 1, y + BLOCK_SIZE - 3, BLOCK_SIZE - 2, 2);
+
+    if (type === "grass") {
+      ctx.fillStyle = "#82502e"; ctx.fillRect(x + 1, y + 9, 38, 30);
+      specks(12, ["#704329", "#925b35", "#a56b41", "#63391f"], 2, 4);
+      ctx.fillStyle = "#438f29"; ctx.fillRect(x + 1, y + 2, 38, 10);
+      ctx.fillStyle = "#6fc83e"; ctx.fillRect(x + 1, y + 1, 38, 5);
+      ctx.fillStyle = "#8cdb53"; ctx.fillRect(x + 2, y + 1, 12, 2);
+      for (let i = 0; i < 8; i++) {
+        const gx = x + 2 + Math.floor(rand() * 36), gh = 2 + Math.floor(rand() * 5);
+        ctx.fillStyle = i % 2 ? "#3e8627" : "#5dbb35"; ctx.fillRect(gx, y + 8 - gh, 2, gh);
+      }
+    } else if (type === "dirt") {
+      ctx.fillStyle = "#80502f"; ctx.fillRect(x + 1, y + 1, 38, 38);
+      specks(18, ["#633a24", "#9b633c", "#ae7546", "#704329", "#c0834c"], 2, 4);
+    } else if (["stone", "coal", "iron", "gold", "diamond"].includes(type)) {
+      ctx.fillStyle = "#777d85"; ctx.fillRect(x + 1, y + 1, 38, 38);
+      specks(20, ["#5e646d", "#92979d", "#a9adb1", "#666c73"], 2, 5);
+      ctx.strokeStyle = "rgba(38,43,49,.55)"; ctx.lineWidth = 1.2;
+      ctx.beginPath(); ctx.moveTo(x + 6, y + 8); ctx.lineTo(x + 12, y + 13); ctx.lineTo(x + 9, y + 19);
+      ctx.moveTo(x + 28, y + 5); ctx.lineTo(x + 25, y + 12); ctx.lineTo(x + 31, y + 17);
+      ctx.moveTo(x + 15, y + 30); ctx.lineTo(x + 20, y + 25); ctx.lineTo(x + 25, y + 32); ctx.stroke();
+      if (type !== "stone") {
+        const ore = type === "coal" ? ["#181b20", "#30343a", "#090b0e"] : type === "iron" ? ["#d1ad8f", "#f0d8c1", "#a98770"] : type === "gold" ? ["#f2cd37", "#ffe981", "#b17e10"] : ["#4cd4d0", "#b3ffff", "#167d91"];
+        for (let i = 0; i < 6; i++) {
+          const ox = x + 5 + Math.floor(rand() * 27), oy = y + 5 + Math.floor(rand() * 27);
+          ctx.fillStyle = ore[Math.floor(rand() * ore.length)];
+          ctx.fillRect(ox, oy, 4 + Math.floor(rand() * 4), 3 + Math.floor(rand() * 4));
+          ctx.fillStyle = "rgba(255,255,255,.18)"; ctx.fillRect(ox, oy, 2, 1);
+        }
+      }
+    } else if (type === "wood") {
+      ctx.fillStyle = "#87532e"; ctx.fillRect(x + 1, y + 1, 38, 38);
+      for (let i = 0; i < 7; i++) {
+        const bx = x + 3 + i * 5;
+        ctx.fillStyle = i % 2 ? "#a16a3d" : "#6f4326"; ctx.fillRect(bx, y + 2, 2, 36);
+        ctx.fillStyle = "rgba(226,174,104,.35)"; ctx.fillRect(bx + 2, y + 4, 1, 30);
+      }
+      ctx.fillStyle = "#c8955d"; ctx.fillRect(x + 3, y + 5, 2, 8);
+    } else if (type === "leaves" || type === "leaf") {
+      ctx.fillStyle = "#236d2d"; ctx.fillRect(x + 1, y + 1, 38, 38);
+      specks(24, ["#2d8737", "#399b3e", "#4eae46", "#1a5b28", "#66bd4d"], 2, 5);
+      ctx.fillStyle = "rgba(180,245,123,.48)"; ctx.fillRect(x + 5, y + 5, 7, 3); ctx.fillRect(x + 24, y + 18, 5, 3);
+      ctx.fillStyle = "rgba(10,54,24,.35)"; ctx.fillRect(x + 2, y + 33, 35, 4);
+    } else if (type === "bedrock") {
+      ctx.fillStyle = "#252a32"; ctx.fillRect(x + 1, y + 1, 38, 38);
+      specks(20, ["#10141b", "#424955", "#303741", "#090c11"], 2, 6);
+      ctx.strokeStyle = "#080b10"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(x + 4, y + 8); ctx.lineTo(x + 34, y + 31); ctx.moveTo(x + 27, y + 3); ctx.lineTo(x + 9, y + 37); ctx.stroke();
+      ctx.strokeStyle = "rgba(174,184,198,.25)"; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(x + 5, y + 7); ctx.lineTo(x + 33, y + 30); ctx.stroke();
+    } else if (type === "planks") {
+      ctx.fillStyle = "#9b673d"; ctx.fillRect(x + 1, y + 1, 38, 38);
+      for (let row = 0; row < 4; row++) {
+        const yy = y + row * 10;
+        ctx.fillStyle = row % 2 ? "#b9814c" : "#c9955f"; ctx.fillRect(x + 2, yy + 1, 36, 8);
+        ctx.strokeStyle = "#714529"; ctx.lineWidth = 1; ctx.strokeRect(x + 2, yy + 1, 36, 8);
+        ctx.fillStyle = "#e3b47a"; ctx.fillRect(x + 5, yy + 3, 12, 1);
+      }
+    } else if (type === "crafting_table") {
+      ctx.fillStyle = "#83502e"; ctx.fillRect(x + 1, y + 1, 38, 38);
+      ctx.fillStyle = "#c58a4e"; ctx.fillRect(x + 2, y + 2, 36, 11);
+      ctx.fillStyle = "#e1b878"; ctx.fillRect(x + 4, y + 3, 32, 2);
+      ctx.fillStyle = "#5f391f"; ctx.fillRect(x + 2, y + 14, 36, 24);
+      ctx.fillStyle = "#a96f3e"; ctx.fillRect(x + 5, y + 16, 30, 18);
+      ctx.strokeStyle = "#4a2d1b"; ctx.lineWidth = 2; ctx.strokeRect(x + 6, y + 17, 28, 16);
+      ctx.beginPath(); ctx.moveTo(x + 6, y + 25); ctx.lineTo(x + 34, y + 25); ctx.moveTo(x + 20, y + 17); ctx.lineTo(x + 20, y + 33); ctx.stroke();
+      ctx.fillStyle = "#e5c18c"; ctx.fillRect(x + 9, y + 19, 5, 4); ctx.fillRect(x + 26, y + 27, 5, 4);
+    } else if (type === "furnace") {
+      ctx.fillStyle = "#565b63"; ctx.fillRect(x + 1, y + 1, 38, 38);
+      specks(10, ["#777d85", "#3e444c", "#969ba0"], 2, 3);
+      ctx.fillStyle = "#252a31"; ctx.fillRect(x + 8, y + 11, 24, 25);
+      ctx.fillStyle = "#11161d"; ctx.fillRect(x + 11, y + 14, 18, 18);
+      ctx.fillStyle = "#9b4420"; ctx.fillRect(x + 14, y + 24, 12, 8);
+      const flicker = Math.sin(performance.now() / 125 + seedBase) * 2;
+      ctx.fillStyle = "#f28a28"; ctx.beginPath(); ctx.moveTo(x + 16, y + 29); ctx.lineTo(x + 18, y + 20 - flicker); ctx.lineTo(x + 22, y + 26); ctx.lineTo(x + 25, y + 18 + flicker); ctx.lineTo(x + 26, y + 31); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = "#ffe47c"; ctx.fillRect(x + 19, y + 25, 4, 6);
+    } else if (type === "torch") {
+      ctx.fillStyle = "#79502c"; ctx.fillRect(x + 18, y + 15, 5, 22);
+      ctx.fillStyle = "#c18a4b"; ctx.fillRect(x + 19, y + 17, 2, 18);
+      ctx.fillStyle = "rgba(255,165,44,.18)"; ctx.beginPath(); ctx.arc(x + 20, y + 12, 14 + Math.sin(performance.now() / 90) * 2, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "#f78e25"; ctx.beginPath(); ctx.moveTo(x + 15, y + 17); ctx.quadraticCurveTo(x + 11, y + 4, x + 20, y + 2); ctx.quadraticCurveTo(x + 30, y + 8, x + 24, y + 18); ctx.fill();
+      ctx.fillStyle = "#ffe98b"; ctx.beginPath(); ctx.moveTo(x + 19, y + 16); ctx.quadraticCurveTo(x + 15, y + 8, x + 21, y + 6); ctx.quadraticCurveTo(x + 26, y + 12, x + 22, y + 17); ctx.fill();
+    } else {
+      ctx.fillStyle = colors.top; ctx.fillRect(x + 1, y + 1, 38, 38); specks(12, [colors.detail, colors.side, colors.top], 2, 4);
     }
-    ctx.strokeStyle = "rgba(0,0,0,.2)";
-    ctx.lineWidth = 1;
-    ctx.strokeRect(x + .5, y + .5, BLOCK_SIZE - 1, BLOCK_SIZE - 1);
-    if (block.type === "bedrock") {
-      ctx.strokeStyle = "#11151b";
-      ctx.beginPath(); ctx.moveTo(x + 5, y + 7); ctx.lineTo(x + 33, y + 31); ctx.moveTo(x + 28, y + 4); ctx.lineTo(x + 8, y + 36); ctx.stroke();
-    }
-    if (["coal", "iron", "gold", "diamond"].includes(block.type)) {
-      ctx.fillStyle = colors.detail;
-      for (let i = 0; i < 5; i++) { const ox = 5 + ((i * 13 + block.x / BLOCK_SIZE * 3) % 27); const oy = 12 + ((i * 9 + block.y / BLOCK_SIZE * 5) % 24); ctx.fillRect(x + ox, y + oy, 6, 5); }
-    }
-    if (block.type === "crafting_table") {
-      ctx.strokeStyle = "#4e2d1c"; ctx.lineWidth = 2; ctx.strokeRect(x + 5, y + 12, 30, 25); ctx.beginPath(); ctx.moveTo(x + 5, y + 21); ctx.lineTo(x + 35, y + 21); ctx.moveTo(x + 20, y + 12); ctx.lineTo(x + 20, y + 37); ctx.stroke();
-    }
-    if (block.type === "furnace") {
-      ctx.fillStyle = "#25282d"; ctx.fillRect(x + 9, y + 13, 22, 21); ctx.fillStyle = "#ff9b39"; ctx.fillRect(x + 15, y + 24, 10, 8); ctx.fillStyle = "#f5d16a"; ctx.fillRect(x + 18, y + 21, 4, 9);
-    }
-    if (block.type === "torch") {
-      ctx.fillStyle = "#754521"; ctx.fillRect(x + 18, y + 15, 5, 23); ctx.fillStyle = "#ffbe39"; ctx.fillRect(x + 16, y + 7, 9, 12); ctx.fillStyle = "#fff1a5"; ctx.fillRect(x + 19, y + 8, 3, 7);
-    }
-    if (hoveredBlock === block && selectedBlock !== block) {
-      ctx.strokeStyle = "rgba(255,255,255,.95)";
-      ctx.lineWidth = 2;
-      ctx.strokeRect(x + 2, y + 2, BLOCK_SIZE - 4, BLOCK_SIZE - 4);
-      ctx.lineWidth = 1;
-    }
-    if (selectedBlock === block) {
-      ctx.strokeStyle = "#fff36a";
-      ctx.lineWidth = 3;
-      ctx.strokeRect(x + 2, y + 2, BLOCK_SIZE - 4, BLOCK_SIZE - 4);
-      ctx.lineWidth = 1;
-    }
+
+    ctx.strokeStyle = "rgba(0,0,0,.42)"; ctx.lineWidth = 1.2; ctx.strokeRect(x + .6, y + .6, BLOCK_SIZE - 1.2, BLOCK_SIZE - 1.2);
+    ctx.strokeStyle = "rgba(255,255,255,.14)"; ctx.beginPath(); ctx.moveTo(x + 2, y + 2); ctx.lineTo(x + BLOCK_SIZE - 3, y + 2); ctx.stroke();
+    if (hoveredBlock === block && selectedBlock !== block) { ctx.strokeStyle = "rgba(255,255,255,.9)"; ctx.lineWidth = 2; ctx.strokeRect(x + 2, y + 2, BLOCK_SIZE - 4, BLOCK_SIZE - 4); }
+    if (selectedBlock === block) { ctx.strokeStyle = "#fff36a"; ctx.lineWidth = 2.5; ctx.strokeRect(x + 2, y + 2, BLOCK_SIZE - 4, BLOCK_SIZE - 4); }
     if (breakState && breakState.target === block) {
       const progress = Math.min(1, (performance.now() - breakState.startedAt) / breakState.duration);
-      ctx.strokeStyle = "rgba(25,25,25,.95)";
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(x + 7, y + 5); ctx.lineTo(x + 18, y + 18); ctx.lineTo(x + 12, y + 27);
+      ctx.strokeStyle = "rgba(15,18,22,.95)"; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(x + 7, y + 5); ctx.lineTo(x + 18, y + 18); ctx.lineTo(x + 12, y + 27);
       if (progress > .25) { ctx.moveTo(x + 18, y + 18); ctx.lineTo(x + 30, y + 10); }
       if (progress > .5) { ctx.moveTo(x + 18, y + 18); ctx.lineTo(x + 31, y + 31); }
       if (progress > .75) { ctx.moveTo(x + 12, y + 27); ctx.lineTo(x + 4, y + 35); }
       ctx.stroke();
-      ctx.fillStyle = "rgba(0,0,0,.7)"; ctx.fillRect(x, y - 6, BLOCK_SIZE, 4);
+      ctx.fillStyle = "rgba(0,0,0,.72)"; ctx.fillRect(x, y - 6, BLOCK_SIZE, 4);
       ctx.fillStyle = "#ffe66d"; ctx.fillRect(x, y - 6, BLOCK_SIZE * progress, 4);
     }
+    ctx.restore();
   }
 
   function render() {
     const width = gameShell.clientWidth;
     const height = gameShell.clientHeight;
-    const light = clock.light;
-    const topNight = [8, 15, 36], bottomNight = [31, 43, 67];
-    const topDay = [105, 200, 250], bottomDay = [212, 242, 255];
-    const mixColor = (a, b, t) => a.map((v, i) => Math.round(v + (b[i] - v) * t));
+    const minutes = clock.minutes;
+    const mix = (a, b, t) => a.map((v, i) => Math.round(v + (b[i] - v) * Math.max(0, Math.min(1, t))));
+    const keyframes = [
+      { t: 0, top: [7, 14, 34], bottom: [27, 39, 60] },
+      { t: 300, top: [38, 50, 83], bottom: [117, 91, 104] },
+      { t: 360, top: [225, 139, 104], bottom: [255, 204, 150] },
+      { t: 480, top: [94, 174, 220], bottom: [203, 232, 244] },
+      { t: 720, top: [66, 164, 225], bottom: [191, 231, 249] },
+      { t: 1020, top: [244, 139, 89], bottom: [255, 191, 132] },
+      { t: 1140, top: [130, 68, 91], bottom: [74, 57, 83] },
+      { t: 1200, top: [7, 14, 34], bottom: [27, 39, 60] },
+      { t: 1440, top: [7, 14, 34], bottom: [27, 39, 60] }
+    ];
+    let segment = 0;
+    while (segment < keyframes.length - 1 && minutes > keyframes[segment + 1].t) segment++;
+    const a = keyframes[segment], b = keyframes[Math.min(segment + 1, keyframes.length - 1)];
+    const progress = b.t === a.t ? 0 : (minutes - a.t) / (b.t - a.t);
+    const skyTop = mix(a.top, b.top, progress), skyBottom = mix(a.bottom, b.bottom, progress);
     const rgb = c => `rgb(${c[0]},${c[1]},${c[2]})`;
-    const skyTop = mixColor(topNight, topDay, light), skyBottom = mixColor(bottomNight, bottomDay, light);
     const gradient = ctx.createLinearGradient(0, 0, 0, height);
     gradient.addColorStop(0, rgb(skyTop)); gradient.addColorStop(1, rgb(skyBottom));
     ctx.fillStyle = gradient; ctx.fillRect(0, 0, width, height);
 
+    // Stars fade around dawn and dusk; their positions remain deterministic.
     if (clock.night || clock.phase === "sunrise" || clock.phase === "sunset") {
-      // Stable pseudo-random stars; no per-frame random flicker.
-      if (clock.night) {
-        ctx.fillStyle = "rgba(255,255,235,.78)";
-        for (let i = 0; i < 42; i++) {
-          const sx = (i * 97 + 31) % Math.max(1, width), sy = (i * 53 + 17) % Math.max(1, Math.floor(height * .58));
-          ctx.fillRect(sx, sy, i % 5 === 0 ? 2 : 1, i % 5 === 0 ? 2 : 1);
-        }
-        ctx.fillStyle = "#f0edca"; ctx.beginPath(); ctx.arc(width - 82, 83, 22, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = rgb(skyTop); ctx.beginPath(); ctx.arc(width - 73, 76, 20, 0, Math.PI * 2); ctx.fill();
-      } else {
-        const sunAlpha = Math.max(.18, light);
-        ctx.globalAlpha = sunAlpha; ctx.fillStyle = "#fff1a8"; ctx.beginPath(); ctx.arc(width - 80, 90, 27, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1;
+      const starAlpha = clock.night ? 0.88 : 0.88 * (1 - clock.light) * 1.6;
+      ctx.fillStyle = `rgba(255,255,235,${Math.max(0, Math.min(.9, starAlpha))})`;
+      for (let i = 0; i < 64; i++) {
+        const sx = (i * 97 + 31) % Math.max(1, width);
+        const sy = (i * 53 + 17) % Math.max(1, Math.floor(height * .58));
+        ctx.fillRect(sx, sy, i % 5 === 0 ? 2 : 1, i % 5 === 0 ? 2 : 1);
       }
-    } else {
-      ctx.fillStyle = "#fff1a8"; ctx.beginPath(); ctx.arc(width - 80, 90, 27, 0, Math.PI * 2); ctx.fill();
     }
-    ctx.globalAlpha = .55 * light;
-    ctx.fillStyle = "#fff";
-    for (const cloud of [{x:width*.22,y:100},{x:width*.55,y:145},{x:width*.78,y:65}]) {
-      ctx.beginPath(); ctx.ellipse(cloud.x, cloud.y, 34, 10, 0, 0, Math.PI*2); ctx.ellipse(cloud.x-16, cloud.y+2, 16, 9, 0, 0, Math.PI*2); ctx.ellipse(cloud.x+13, cloud.y-5, 20, 13, 0, 0, Math.PI*2); ctx.fill();
+
+    // Celestial bodies follow the same 06:00 sunrise / 17:00 sunset / 20:00 night rhythm as Python.
+    if (minutes >= 360 && minutes < 1020) {
+      const p = (minutes - 360) / (1020 - 360);
+      const sx = width * (.08 + .84 * p);
+      const sy = height * (.39 - Math.sin(Math.PI * p) * .31);
+      const glow = ctx.createRadialGradient(sx, sy, 5, sx, sy, 52);
+      glow.addColorStop(0, "rgba(255,238,164,.42)"); glow.addColorStop(1, "rgba(255,238,164,0)");
+      ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(sx, sy, 52, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "#fff0a4"; ctx.beginPath(); ctx.arc(sx, sy, 23, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "rgba(255,255,225,.8)"; ctx.beginPath(); ctx.arc(sx - 6, sy - 6, 7, 0, Math.PI * 2); ctx.fill();
+    } else if (minutes >= 1200 || minutes < 300) {
+      const elapsed = minutes >= 1200 ? minutes - 1200 : 1440 - 1200 + minutes;
+      const p = elapsed / 540;
+      const mx = width * (.1 + .8 * p);
+      const my = height * (.36 - Math.sin(Math.PI * p) * .26);
+      ctx.fillStyle = "rgba(218,231,255,.12)"; ctx.beginPath(); ctx.arc(mx, my, 39, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "#e7edda"; ctx.beginPath(); ctx.arc(mx, my, 20, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = rgb(skyTop); ctx.beginPath(); ctx.arc(mx + 9, my - 6, 18, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "rgba(255,255,255,.35)"; ctx.beginPath(); ctx.arc(mx - 7, my - 8, 3, 0, Math.PI * 2); ctx.fill();
+    }
+
+    // Drifting layered clouds provide motion without adding heavy image assets.
+    const drift = (performance.now() * .006) % (width + 150);
+    ctx.globalAlpha = .78 * Math.max(.22, clock.light);
+    for (const cloud of [{x:width*.16,y:height*.17,s:1},{x:width*.52,y:height*.24,s:.8},{x:width*.84,y:height*.13,s:1.12}]) {
+      const cx = (cloud.x + drift * cloud.s + width + 90) % (width + 150) - 75;
+      const cy = cloud.y;
+      ctx.fillStyle = "rgba(255,255,255,.92)";
+      ctx.beginPath();
+      ctx.ellipse(cx, cy + 7, 35 * cloud.s, 11 * cloud.s, 0, 0, Math.PI * 2);
+      ctx.ellipse(cx - 17 * cloud.s, cy + 5, 18 * cloud.s, 10 * cloud.s, 0, 0, Math.PI * 2);
+      ctx.ellipse(cx + 13 * cloud.s, cy, 21 * cloud.s, 15 * cloud.s, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "rgba(205,226,238,.65)"; ctx.beginPath(); ctx.ellipse(cx, cy + 12, 28 * cloud.s, 5 * cloud.s, 0, 0, Math.PI * 2); ctx.fill();
     }
     ctx.globalAlpha = 1;
 
@@ -1137,20 +1409,16 @@
     if (event.pointerType === "mouse") { hoveredBlock = null; render(); }
   });
   canvas.addEventListener("pointerdown", handleCanvasPointer);
-  canvas.addEventListener("pointerup", event => {
-    if (event.pointerType === "mouse" && event.button === 0 && breakState) {
-      const elapsed = performance.now() - breakState.startedAt;
-      if (elapsed < breakState.duration) cancelBreaking(true);
-    }
-  });
-  canvas.addEventListener("pointercancel", () => cancelBreaking(true));
-  window.addEventListener("pointerup", event => {
-    if (event.pointerType === "mouse" && event.button === 0 && breakState) {
-      const elapsed = performance.now() - breakState.startedAt;
-      if (elapsed < breakState.duration) cancelBreaking(true);
-    }
-  });
-  window.addEventListener("pointercancel", () => cancelBreaking(true));
+  function finishCanvasAction(event) {
+    if (!breakState) return;
+    if (event && event.pointerType === "mouse" && event.button !== 0) return;
+    const elapsed = performance.now() - breakState.startedAt;
+    if (elapsed < breakState.duration) cancelBreaking(false);
+  }
+  canvas.addEventListener("pointerup", finishCanvasAction);
+  canvas.addEventListener("pointercancel", () => cancelBreaking(false));
+  window.addEventListener("pointerup", finishCanvasAction);
+  window.addEventListener("pointercancel", () => cancelBreaking(false));
   canvas.addEventListener("contextmenu", event => event.preventDefault());
 
   // Mouse wheel: scroll the inventory grid while the pointer is over the inventory;
@@ -1175,6 +1443,7 @@
     }
   }, { passive: false });
   window.addEventListener("keydown", event => {
+    if (event.key === "Escape" && mainMenuPanel && !mainMenuPanel.hidden) { event.preventDefault(); mainMenuPanel.hidden = true; return; }
     if (event.key === "Escape" && anyPanelOpen()) { event.preventDefault(); closeAllPanels(); return; }
     keyDown(event);
   });
@@ -1193,15 +1462,9 @@
     else { inventoryOpen = !inventoryOpen; renderInventory(); }
   });
   placeButton.addEventListener("click", placeBlockNearSelection);
-  touchPlaceButton.addEventListener("click", placeBlockNearSelection);
-  if (touchAttackButton) touchAttackButton.addEventListener("click", attackAtPointer);
-  if (touchEatButton) touchEatButton.addEventListener("pointerdown", event => { event.preventDefault(); eatSelectedFood(); });
-  if (touchInteractButton) touchInteractButton.addEventListener("click", () => {
-    if (!interactAtWorldPoint(pointerWorld)) setStatus("میزکار یا کوره‌ای را انتخاب کن و تعامل را بزن");
-  });
   if (saveButton) saveButton.addEventListener("click", () => saveGame(true));
   if (loadButton) loadButton.addEventListener("click", () => loadGame(true));
-  if (newGameButton) newGameButton.addEventListener("click", () => { if (window.confirm("Start a new world? The saved world on this device will be replaced.")) { localStorage.removeItem("minecraft2d-web-save-v3"); window.location.reload(); } });
+  if (newGameButton) newGameButton.addEventListener("click", () => { if (window.confirm("جهان ذخیره‌شده جایگزین شود و یک جهان تازه ساخته شود؟")) startNewWorld(); });
   const respawnButton = document.getElementById("respawn-button");
   const deathExitButton = document.getElementById("death-exit-button");
   if (respawnButton) respawnButton.addEventListener("click", respawnPlayer);
@@ -1215,17 +1478,24 @@
     releaseInputs();
   });
   if (menuContinueButton) menuContinueButton.addEventListener("click", () => {
+    Sound.unlock();
     if (mainMenuPanel) mainMenuPanel.hidden = true;
     if (!player.alive && deathPanel) deathPanel.hidden = false;
+    setStatus("به جهان خوش آمدی");
   });
   if (menuLoadButton) menuLoadButton.addEventListener("click", () => {
+    Sound.unlock();
     if (loadGame(true) && mainMenuPanel) mainMenuPanel.hidden = true;
   });
   if (menuNewButton) menuNewButton.addEventListener("click", () => {
-    if (window.confirm("Start a new world? The saved world on this device will be replaced.")) {
-      localStorage.removeItem("minecraft2d-web-save-v3");
-      window.location.reload();
-    }
+    if (window.confirm("جهان ذخیره‌شده جایگزین شود و یک جهان تازه ساخته شود؟")) startNewWorld();
+  });
+  if (menuSaveButton) menuSaveButton.addEventListener("click", () => { Sound.unlock(); saveGame(true); });
+  if (soundToggleButton) soundToggleButton.addEventListener("click", () => { Sound.toggle(); });
+  if (pauseMenuButton) pauseMenuButton.addEventListener("click", () => {
+    Sound.unlock();
+    releaseInputs();
+    if (mainMenuPanel) mainMenuPanel.hidden = !mainMenuPanel.hidden;
   });
   tryLandscapeButton.addEventListener("click", requestLandscape);
   window.addEventListener("resize", () => { updateDeviceMode(); resizeCanvas(); });
@@ -1238,6 +1508,9 @@
   world.generateAround(player.x);
   renderInventory();
   const resumed = loadGame(false);
+  if (mainMenuPanel) mainMenuPanel.hidden = false;
+  refreshMenuButtons();
+  Sound.updateButton();
   updateDeviceMode();
   resizeCanvas();
   updateCamera(true);

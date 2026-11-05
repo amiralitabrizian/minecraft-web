@@ -79,3 +79,23 @@ Original Python/Pygame project: https://github.com/amiralitabrizian/Minecraft2D
 ## Developer
 
 Developed by Amir Ali Tabrizian.
+
+## Version 28 — Visual and mobile controls update
+
+This update focuses on a cleaner game screen and a closer match to the original Pygame project:
+
+- A dedicated start menu now provides Continue, Load, New World, Save World, and sound settings.
+- Mobile touch controls are limited to left, right, and jump. Tapping a mob attacks it; holding a block mines it; tapping an adjacent empty cell places the selected block. Crafting tables and furnaces open by tapping them.
+- Desktop keyboard and mouse controls remain available. Left mouse mines or attacks; right mouse places, eats, or interacts.
+- The HUD shows health, hunger, and an in-game clock. The sky changes through dawn, day, dusk, and night, with the sun and moon moving across the sky.
+- Block textures, ore details, the furnace, sheep, and cows have been redrawn in a more detailed pixel-art style.
+- Sound effects and background music are loaded from the `sounds/` folder. Browsers require a user gesture before music can start; use the sound button in the start menu to enable or disable audio.
+- The service-worker cache is versioned `minecraft-web-v28` and includes the local sound assets.
+
+### Controls
+
+**Desktop:** A/D or arrow keys to move, Space to jump, left-click and hold to mine, left-click a mob to attack, right-click to place or interact, E for inventory, C for crafting, F to attack the last targeted position, R to eat, and number keys 1–9 to select a hotbar slot. Mouse wheel changes the selected slot.
+
+**Mobile:** rotate to landscape; use the left/right buttons and jump button. Tap a mob to attack, hold a block to mine, tap an empty adjacent cell to place the selected block, and tap a crafting table or furnace to open it. The three compact top-left buttons open the menu, inventory, and crafting screen.
+
+Save data is stored locally in the current browser on the current device. It is not automatically synced between devices.
