@@ -7,13 +7,13 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <link rel="icon" type="image/png" sizes="32x32" href="./icons/favicon-32.png?v=21">
-  <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png?v=21">
-  <link rel="apple-touch-icon" sizes="192x192" href="./icons/apple-touch-icon.png?v=21">
+  <link rel="icon" type="image/png" sizes="32x32" href="./icons/icon-192.png?v=27">
+  <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png?v=27">
+  <link rel="apple-touch-icon" sizes="192x192" href="./icons/icon-192.png?v=27">
   <meta name="description" content="Minecraft Web — a small block-based browser game">
   <title>Minecraft Web</title>
-  <link rel="manifest" href="./manifest.json?v=21">
-  <link rel="stylesheet" href="./style.css?v=21">
+  <link rel="manifest" href="./manifest.json?v=27">
+  <link rel="stylesheet" href="./style.css?v=27">
 </head>
 <body>
   <section id="rotate-screen" aria-live="polite">
@@ -32,43 +32,45 @@
   <main id="game-shell">
     <canvas id="game-canvas" aria-label="محیط بازی"></canvas>
     <header id="top-hud">
-      <div id="help">لپ‌تاپ: A/D حرکت، Space پرش، کلیک چپ و نگه‌داشتن: شکستن، کلیک راست: قراردادن؛ E: Inventory؛ 1 تا 9: انتخاب Hotbar</div>
-      <div id="debug-status" role="status">در حال آماده‌سازی...</div>
+      <div id="help">A/D یا ←/→ حرکت · Space پرش · کلیک چپ: شکستن/حمله · کلیک راست: ساختن/تعامل · E: Inventory · F: حمله · R: خوردن · G: تعامل · C: Craft · Shift / ضربهٔ سریع دوباره: دویدن · 1 تا 9: Hotbar</div>
+      <div class="hud-right"><div id="vitals-hud" aria-live="polite"></div><div id="clock-hud">06:00 · Day</div><div class="save-controls"><button id="new-game-button" type="button">New</button><button id="save-button" type="button">Save</button><button id="load-button" type="button">Load</button></div><div id="debug-status" role="status">در حال آماده‌سازی...</div></div>
     </header>
 
-    <section id="block-panel" aria-label="ابزار بلاک‌ها">
-      <label for="block-type">بلاک برای قراردادن</label>
-      <select id="block-type" aria-label="بلاک آزمایشی">
-        <option value="grass">چمن</option>
-        <option value="dirt">خاک</option>
-        <option value="stone">سنگ</option>
-        <option value="wood">چوب</option>
-        <option value="leaves">برگ</option>
-      </select>
-      <button id="break-button" type="button">شکستن (۱٫۵ ثانیه)</button>
-      <button id="place-button" type="button">قراردادن بلاک</button>
+    <section id="block-panel" aria-label="ابزار بلاک‌ها" hidden>
+      <label for="block-type">بلاک</label><select id="block-type"><option value="grass">چمن</option></select>
+      <button id="break-button" type="button">شکستن</button><button id="place-button" type="button">قراردادن</button>
     </section>
 
     <button id="inventory-toggle" type="button">Inventory</button>
+    <button id="crafting-toggle" type="button">Craft</button>
     <div id="inventory-panel" hidden></div>
+    <section id="crafting-panel" class="system-panel" hidden aria-label="Crafting Table"></section>
+    <section id="furnace-panel" class="system-panel" hidden aria-label="Furnace"></section>
+    <section id="death-panel" hidden aria-label="Death screen">
+      <div class="death-card"><h1>You died!</h1><p>وسایلت در همان جهان باقی مانده‌اند.</p><button id="respawn-button" type="button">RESPAWN</button><button id="death-exit-button" type="button">EXIT TO MENU</button></div>
+    </section>
+    <section id="main-menu-panel" hidden aria-label="Game menu">
+      <div class="death-card main-menu-card"><h1>MINECRAFT 2D</h1><p>جهان ذخیره‌شده روی همین دستگاه باقی می‌ماند.</p><button id="menu-continue-button" type="button">CONTINUE</button><button id="menu-load-button" type="button">LOAD GAME</button><button id="menu-new-button" type="button">NEW WORLD</button></div>
+    </section>
     <nav id="hotbar" aria-label="نوار ابزار"></nav>
     <nav id="touch-controls" aria-label="کنترل لمسی">
-      <div class="move-controls">
-        <button id="left-button" type="button" aria-label="حرکت به چپ">←</button>
-        <button id="right-button" type="button" aria-label="حرکت به راست">→</button>
-      </div>
+      <div class="move-controls"><button id="left-button" type="button" aria-label="حرکت به چپ">←</button><button id="right-button" type="button" aria-label="حرکت به راست">→</button></div>
       <div class="action-controls">
         <button id="jump-button" type="button" aria-label="پرش" title="پرش">↑</button>
-        <button id="touch-break-button" type="button" aria-label="شکستن بلاک" title="شکستن بلاک">⛏</button>
-        <button id="touch-place-button" type="button" aria-label="قراردادن بلاک" title="قراردادن بلاک">▣</button>
+        <button id="touch-break-button" type="button" aria-label="شکستن بلاک" title="شکستن">⛏</button>
+        <button id="touch-place-button" type="button" aria-label="قراردادن بلاک" title="ساختن">▣</button>
+        <button id="touch-attack-button" type="button" aria-label="حمله" title="حمله">⚔</button>
+        <button id="touch-eat-button" type="button" aria-label="خوردن" title="خوردن">🍎</button>
+        <button id="touch-interact-button" type="button" aria-label="تعامل" title="تعامل">E</button>
       </div>
     </nav>
   </main>
-  <script src="./world.js?v=21"></script>
-  <script src="./script.js?v=21"></script>
+  <script src="./world.js?v=27"></script>
+  <script src="./survival.js?v=27"></script>
+  <script src="./script.js?v=27"></script>
   <script>
     if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
-      window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js?v=21', { updateViaCache: 'none' }).then(registration => registration.update()).catch(err => console.warn('Service worker registration failed:', err)));
+      window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js?v=27', { updateViaCache: 'none' }).then(registration => registration.update()).catch(err => console.warn('Service worker registration failed:', err)));
     }
   </script>
 </body>

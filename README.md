@@ -1,72 +1,78 @@
-# Minecraft2D Web — PWA Test Build (v16)
+# Minecraft2D Web — Survival PWA (v27)
 
-A lightweight 2D block-based browser game built with HTML, CSS, and JavaScript. This web project is separate from the original Python/Pygame project.
+A browser-based, 2D block-world survival game. This project is separate from the original Python/Pygame game; its gameplay systems are being ported and adapted for desktop browsers and touch devices.
 
-## Current Features
+## Gameplay systems in this build
 
-- Player movement and jumping
-- Block breaking and placement
-- Dropped blocks that can be collected
-- 36-slot inventory and 9-slot hotbar
-- Stack counts (up to 64 per stack)
-- Desktop keyboard/mouse controls and mobile touch controls
-- Touch inventory uses a compact bottom panel on mobile, with touch controls kept above it
-- Mining durations adapted from the original Pygame game's bare-hand block timings
-- PWA manifest, square app icons, standalone display mode, and landscape orientation preference
-- Versioned service-worker app-shell caching, cached app icons, and offline navigation fallback
+- Seeded chunk world with grass, dirt, stone, bedrock, trees, caves, and coal/iron/gold/diamond ore
+- Player movement, jumping, collision, camera follow, block mining, block placement, and dropped-item pickup
+- 36-slot inventory and 9-slot hotbar, stack sizes, item movement, and tool durability
+- Wooden, iron, gold, and diamond pickaxes, axes, and swords
+- Crafting recipes for the crafting table, planks, sticks, furnace, and tools
+- Furnace input/fuel/output, coal fuel, and smelting for ores and raw food
+- Day/night cycle, sunrise/sunset, night and cave darkness, and torch lighting
+- Sheep, cows, zombies, skeletons, zombie melee attacks, skeleton arrows, and daytime burning for hostile mobs
+- Health, hunger, food, regeneration, starvation, fall damage, death, dropped inventory, and respawn
+- Death screen, respawn with dropped inventory left in the world, and a menu exit path
+- Manual save/load and automatic local browser save
+- Responsive canvas, desktop keyboard/mouse controls, touch controls, landscape prompt, and PWA offline app shell
 
-## Desktop Controls
+The web build follows the original game's main rules and data where possible, but it is not a pixel-perfect or code-identical copy of Pygame. Rendering, world generation, and some entity behavior are adapted to JavaScript and the browser.
 
-- **A / D** or **Arrow Keys** — Move
-- **Space** or **Arrow Up** — Jump
-- **Hold left mouse button** — Break the targeted block
-- **Right-click** — Place a block next to a valid target
-- **E** — Open or close Inventory
+## Desktop controls
+
+- **A / D** or **← / →** — Move
+- **Shift** or quickly double-tap a movement key — Sprint
+- **Space** or **↑** — Jump
+- **Hold left mouse button** — Mine a block; click a mob to attack
+- **Right-click** — Place a block, eat selected food, or interact with a station
+- **E** — Open/close inventory
+- **C** — Open crafting menu (the first crafting table can be made here)
+- **G** — Interact with a nearby crafting table/furnace
+- **F** — Attack the mob under the pointer
+- **R** — Eat selected food
 - **1–9** — Select a hotbar slot
-- **Mouse wheel** — Cycle hotbar slots; scroll the inventory while the pointer is over it
+- **Mouse wheel** — Cycle hotbar slots, or scroll the inventory grid
 
-## Mobile Controls
+## Mobile controls
 
-1. Open the site over HTTPS (GitHub Pages is HTTPS).
-2. Rotate the phone to landscape. The game asks for landscape when the phone is in portrait.
+1. Open the published site over HTTPS.
+2. Rotate the phone to landscape; the app displays a landscape prompt in portrait mode.
 3. Use the left/right buttons and jump button to move.
-4. Tap a nearby block to select it, then press and hold the pickaxe button until mining finishes.
-5. Use the Inventory button to open Inventory. Tap an item and then its destination slot to move it.
-6. Tap a hotbar slot to select the block for placement.
+4. Tap a block to select it, then hold the mining button to break it.
+5. Use the place, attack, eat, and interact buttons for the corresponding actions.
+6. Use the Inventory and Craft buttons near the top-left for item management and crafting.
+7. When the death screen appears, choose RESPAWN to continue in the same world or EXIT TO MENU to load/continue/start another world.
 
-The manifest requests `standalone` display and landscape orientation. The browser/operating system decides how installation is presented, so orientation locking is not guaranteed in every browser.
+Touch behavior and layout depend on the device/browser. The project has not been physically tested on every Android/iPhone model.
 
-## Install on Android
+## PWA installation and offline use
 
-1. Push the project to the GitHub repository and enable GitHub Pages for the correct branch and root folder.
-2. Open the published **HTTPS** Pages URL in Chrome on Android.
-3. Wait for the page to finish loading once while online.
-4. In Chrome, use **⋮ → Install app** or **Add to Home screen** (the exact wording depends on Chrome version).
-5. Launch the installed icon from the home screen and confirm it opens in its own app window.
-6. Rotate to landscape and test movement, mining, placement, Inventory, and Hotbar.
+1. Publish this folder to the configured GitHub Pages source and confirm the HTTPS page opens.
+2. Open the HTTPS URL in Chrome on Android (or a supported browser on another device).
+3. Let the app finish loading once while online so the service worker can cache its app shell and icons.
+4. Use the browser's **Install app** or **Add to Home Screen** option, if available.
+5. Launch the installed app, rotate to landscape, and test controls.
+6. For an offline test, open the app online first, then enable airplane mode and relaunch it.
 
-## Offline Test
+The manifest requests standalone display and landscape orientation. Browser/OS behavior can vary, and orientation locking is not guaranteed on every device.
 
-1. Open the app once while online and wait for it to finish loading.
-2. Close/reopen it once, then enable Airplane mode.
-3. Launch the home-screen app again.
-4. The cached HTML, CSS, JavaScript, manifest, and app icons should load from the service worker. Any future external resources must be added to the app-shell cache or they may not be available offline.
+## Project files
 
-## Project Files
-
-- `index.html` — Page, PWA metadata, and controls
+- `index.html` — Page structure, PWA metadata, and interface controls
 - `style.css` — Responsive desktop/mobile layout
-- `script.js` — Game logic, player, mining, drops, inventory, and hotbar
-- `world.js` — World and block management
-- `manifest.json` — App name, icons, standalone display, landscape preference
-- `sw.js` — Versioned app-shell cache and offline navigation fallback
-- `icons/` — PWA icon sizes and maskable icon
+- `script.js` — Main game loop, player, inventory, mining, crafting, furnace, survival, save/load, and input
+- `world.js` — Deterministic chunk terrain and block management
+- `survival.js` — Tool/recipe data, game clock, mob AI, and furnace simulation
+- `manifest.json` — PWA app name, icons, orientation, and display mode
+- `sw.js` — Versioned app-shell cache and offline fallback
+- `icons/` — PWA app icons
 
-## Test Status
+## Verification status
 
-See `PWA_TEST_REPORT.md`. Automated/local browser checks do not replace installing and testing the app on a physical Android phone.
+Automated checks were run for JavaScript syntax, world generation/edit persistence, time phases, crafting recipe rules, tool data, and furnace smelting. A full physical-device matrix and GitHub Pages deployment check remain manual. See `PWA_TEST_REPORT.md` for the exact checks.
 
-## Related Project
+## Related project
 
 Original Python/Pygame project: https://github.com/amiralitabrizian/Minecraft2D
 

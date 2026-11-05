@@ -472,3 +472,167 @@ body.needs-landscape #rotate-screen { display:flex; }
     bottom: calc(6px + env(safe-area-inset-bottom, 0px)) !important;
   }
 }
+
+/* v25 — survival HUD, stations, menus and compact touch controls. */
+[hidden] { display:none !important; }
+#block-panel { display:none !important; }
+#top-hud { align-items:flex-start; z-index:30; }
+#help { max-width:56%; pointer-events:none; }
+.hud-right { display:flex; align-items:flex-start; flex-direction:column; gap:5px; pointer-events:none; min-width:170px; }
+#vitals-hud { display:flex; flex-direction:column; gap:1px; padding:4px 7px; border-radius:7px; background:rgba(0,0,0,.58); border:1px solid rgba(255,255,255,.15); direction:ltr; }
+.health-row,.hunger-row { display:flex; gap:2px; min-height:13px; line-height:13px; }
+.stat-heart { font-size:14px; color:#58616c; text-shadow:1px 1px #111; }
+.stat-heart.full { color:#ef4444; }
+.stat-heart.half { color:#f87171; opacity:.7; }
+.stat-food { font-size:11px; color:#59616a; text-shadow:1px 1px #111; }
+.stat-food.full { color:#f59e0b; }
+.stat-food.half { color:#fbbf24; opacity:.65; }
+#clock-hud { color:#fff; background:rgba(0,0,0,.6); border-radius:6px; padding:4px 8px; font: bold 12px Tahoma,Arial,sans-serif; direction:ltr; }
+.save-controls { display:flex; gap:4px; pointer-events:auto; }
+.save-controls button { padding:4px 8px; border:1px solid #94a3b8; border-radius:5px; color:#fff; background:rgba(15,23,42,.88); font-size:11px; font-weight:bold; }
+#debug-status { pointer-events:none; max-width:320px; }
+#inventory-toggle { pointer-events:auto; z-index:33; }
+#hotbar { z-index:32; }
+.slot-durability { position:absolute; left:5px; right:5px; bottom:3px; height:3px; background:#242424; border-radius:3px; overflow:hidden; }
+.slot-durability i { display:block; height:100%; background:#65d16e; }
+.slot-icon.coal { background:radial-gradient(circle at 35% 35%,#222 0 20%,#666 25% 55%,#292929 65%); }
+.slot-icon.iron { background:radial-gradient(circle at 35% 40%,#ead4bd 0 22%,#a78b72 26% 65%,#695a4b 75%); }
+.slot-icon.gold { background:radial-gradient(circle at 35% 40%,#fff08a 0 20%,#e0b82f 28% 65%,#966a0c 78%); }
+.slot-icon.diamond { background:radial-gradient(circle at 35% 40%,#d4ffff 0 20%,#63d6ce 28% 65%,#197c89 78%); }
+.slot-icon.torch { background:linear-gradient(90deg,transparent 40%,#8b5425 40% 60%,transparent 60%),linear-gradient(#fff19a,#ff9e24); }
+.slot-icon.planks { background:repeating-linear-gradient(0deg,#96603a 0 5px,#c28a50 5px 8px); }
+.slot-icon.crafting_table { background:repeating-linear-gradient(0deg,#9c6338 0 7px,#d0a16a 7px 9px); border:2px solid #54341e; }
+.slot-icon.furnace { background:linear-gradient(#777b82 0 30%,#333840 30% 100%); }
+.slot-icon.stick { background:linear-gradient(90deg,transparent 42%,#bb8c54 42% 58%,transparent 58%); }
+.slot-icon.wool { background:#eee; border-radius:7px; }
+.slot-icon.meat,.slot-icon.mutton { background:#b94e54; }
+.slot-icon.cooked_beef,.slot-icon.cooked_mutton { background:#783b2f; }
+.slot-icon.apple { background:#d83a32; border-radius:50%; }
+.slot-icon.bone { background:linear-gradient(135deg,transparent 25%,#eee4c8 26% 74%,transparent 75%); }
+.slot-icon.wooden_pickaxe,.slot-icon.iron_pickaxe,.slot-icon.golden_pickaxe,.slot-icon.diamond_pickaxe,
+.slot-icon.wooden_axe,.slot-icon.iron_axe,.slot-icon.golden_axe,.slot-icon.diamond_axe,
+.slot-icon.wooden_sword,.slot-icon.iron_sword,.slot-icon.golden_sword,.slot-icon.diamond_sword {
+  background:linear-gradient(135deg,transparent 37%,#8a5a31 38% 48%,transparent 49%),linear-gradient(45deg,transparent 40%,#bbb 41% 59%,transparent 60%);
+}
+.system-panel { position:absolute; z-index:60; left:50%; top:50%; transform:translate(-50%,-50%); width:min(900px,calc(100vw - 24px)); max-height:min(82vh,calc(100dvh - 24px)); overflow:hidden; color:#f8fafc; border:2px solid #9aa8b9; border-radius:12px; background:rgba(15,23,42,.98); box-shadow:0 16px 50px rgba(0,0,0,.55); direction:ltr; }
+.system-panel-head { display:flex; align-items:center; justify-content:space-between; padding:10px 14px; background:#263449; border-bottom:1px solid #64748b; font-size:19px; letter-spacing:1px; }
+.system-panel-head button { border:1px solid #94a3b8; border-radius:6px; background:#334155; color:#fff; padding:5px 10px; font-size:17px; }
+.system-panel-body { display:grid; grid-template-columns:minmax(220px, .9fr) minmax(270px, 1.1fr); gap:12px; padding:12px; min-height:390px; }
+.recipe-list { overflow:auto; max-height:min(60vh,540px); display:flex; flex-direction:column; gap:5px; padding-right:4px; }
+.recipe-row { display:grid; grid-template-columns:1fr auto; gap:3px 8px; align-items:center; text-align:left; border:1px solid #526174; border-radius:7px; background:#202d40; color:#fff; padding:8px; min-height:52px; }
+.recipe-row span { font-weight:bold; }
+.recipe-row small { color:#cbd5e1; grid-column:1; font-size:11px; line-height:1.35; }
+.recipe-row b { grid-column:2; grid-row:1 / span 2; color:#9ca3af; }
+.recipe-row.active { background:#4a452d; border-color:#f6d365; }
+.recipe-row.active b { color:#86efac; }
+.recipe-detail { padding:8px 12px; border:1px solid #475569; border-radius:9px; background:#1c293b; display:flex; flex-direction:column; align-items:flex-start; gap:12px; }
+.recipe-detail h3 { margin:4px 0 0; font-size:20px; }
+.recipe-detail p { margin:0; color:#cbd5e1; }
+.recipe-ingredients { display:flex; flex-wrap:wrap; gap:7px; }
+.recipe-ingredient { display:flex; flex-direction:column; gap:5px; min-width:92px; padding:8px; border-radius:7px; background:#29394e; font-size:12px; }
+.recipe-ingredient b { font-size:14px; }
+.recipe-ingredient.ready b { color:#86efac; }
+.recipe-ingredient.missing b { color:#fca5a5; }
+.recipe-output { display:flex; align-items:center; gap:12px; min-height:50px; padding:8px; border:1px solid #64748b; border-radius:7px; background:#263449; }
+.recipe-output .slot-icon { position:static; display:inline-block; flex-shrink:0; width:30px; height:30px; }
+#craft-confirm { margin-top:auto; width:100%; padding:11px; border:1px solid #a3e6ad; border-radius:7px; background:#27633d; color:#fff; font-weight:bold; letter-spacing:1px; }
+#craft-confirm:disabled { background:#475569; border-color:#64748b; color:#94a3b8; cursor:not-allowed; }
+.recipe-detail>small { color:#cbd5e1; font-size:11px; }
+.furnace-content { padding:16px; }
+.furnace-slots { display:flex; gap:12px; align-items:center; justify-content:center; min-height:140px; }
+.furnace-slot { width:clamp(95px,20vw,150px); height:112px; border:2px solid #68778b; border-radius:8px; background:#29384c; display:flex; flex-direction:column; align-items:center; justify-content:space-around; padding:6px; text-align:center; }
+.furnace-slot strong { font-size:11px; color:#cbd5e1; }
+.furnace-slot .slot-icon { position:static; display:block; width:30px; height:30px; }
+.furnace-slot b { font-size:11px; line-height:1.3; }
+.furnace-meter { width:12px; height:80px; background:#111827; border-radius:8px; border:1px solid #64748b; overflow:hidden; display:flex; align-items:flex-end; }
+.furnace-meter span { width:100%; background:#f59e0b; transition:height .15s linear; }
+.furnace-meter.fuel span { background:#f97316; }
+.furnace-actions { display:flex; flex-wrap:wrap; justify-content:center; gap:8px; margin-top:20px; }
+.furnace-actions button { flex:1 1 170px; min-height:42px; padding:8px; border:1px solid #94a3b8; border-radius:7px; background:#334b63; color:#fff; font-weight:bold; }
+.furnace-actions button:disabled { opacity:.45; }
+.furnace-content>p { text-align:center; color:#cbd5e1; font-size:12px; }
+#death-panel { position:absolute; inset:0; z-index:100; display:flex; align-items:center; justify-content:center; background:rgba(65,0,0,.78); }
+.death-card { width:min(360px,calc(100vw - 32px)); padding:25px; display:flex; flex-direction:column; gap:12px; text-align:center; color:#fff; background:rgba(20,20,26,.96); border:2px solid #d65b5b; border-radius:12px; box-shadow:0 12px 40px #0009; }
+.death-card h1 { margin:0; color:#ff6868; font-size:36px; }
+.death-card p { margin:0 0 8px; line-height:1.7; }
+.death-card button { min-height:44px; border:1px solid #cbd5e1; border-radius:7px; background:#34465c; color:#fff; font-weight:bold; }
+#respawn-button { background:#27633d; }
+#touch-attack-button,#touch-eat-button,#touch-interact-button { min-width:46px !important; }
+#touch-controls { z-index:35; }
+@media (pointer:coarse), (hover:none), (max-width:700px) {
+  #top-hud { gap:4px; }
+  #help { display:none; }
+  .hud-right { min-width:0; gap:3px; }
+  #vitals-hud { padding:2px 5px; }
+  .stat-heart { font-size:12px; }
+  .stat-food { font-size:10px; }
+  #clock-hud { font-size:10px; padding:3px 6px; }
+  .save-controls button { font-size:10px; padding:3px 5px; }
+  #debug-status { max-width:min(52vw,250px); font-size:10px; padding:4px 6px; }
+  #touch-controls { bottom:calc(44px + env(safe-area-inset-bottom,0px)); gap:5px; }
+  #touch-controls .move-controls,#touch-controls .action-controls { gap:3px; }
+  #touch-controls button { min-width:42px; min-height:42px; font-size:18px; padding:3px; }
+  #touch-break-button,#touch-place-button { min-width:42px !important; width:42px; font-size:16px !important; }
+  #touch-attack-button,#touch-eat-button,#touch-interact-button { min-width:40px !important; width:40px; }
+  #hotbar { bottom:calc(8px + env(safe-area-inset-bottom,0px)) !important; }
+  .system-panel { width:calc(100vw - 12px); max-height:calc(100dvh - 16px); }
+  .system-panel-head { padding:7px 10px; font-size:16px; }
+  .system-panel-body { grid-template-columns:minmax(112px,.8fr) minmax(150px,1.2fr); gap:7px; padding:7px; min-height:0; }
+  .recipe-list { max-height:55vh; }
+  .recipe-row { padding:6px; min-height:48px; }
+  .recipe-row span { font-size:12px; }
+  .recipe-row small { font-size:9px; }
+  .recipe-detail { padding:7px; gap:8px; }
+  .recipe-detail h3 { font-size:15px; }
+  .recipe-ingredient { min-width:70px; font-size:10px; padding:5px; }
+  .recipe-output { font-size:11px; }
+  #craft-confirm { padding:8px; }
+  .furnace-content { padding:8px; }
+  .furnace-slots { gap:4px; min-height:100px; }
+  .furnace-slot { width:27vw; max-width:115px; height:90px; padding:4px; }
+  .furnace-meter { height:60px; width:9px; }
+  .furnace-slot b { font-size:9px; }
+  .furnace-actions { margin-top:10px; gap:5px; }
+  .furnace-actions button { flex-basis:135px; min-height:36px; font-size:11px; }
+}
+@media (orientation:landscape) and (max-height:430px) {
+  #touch-controls { bottom:calc(42px + env(safe-area-inset-bottom,0px)); }
+  #touch-controls button { min-width:38px; min-height:38px; font-size:16px; }
+  #touch-break-button,#touch-place-button { min-width:38px !important; width:38px; }
+  #touch-attack-button,#touch-eat-button,#touch-interact-button { min-width:36px !important; width:36px; }
+  #vitals-hud .stat-heart { font-size:10px; }
+  .system-panel-body { min-height:0; }
+  .recipe-list { max-height:54vh; }
+}
+
+/* Crafting entry point: the first table must be craftable before one exists. */
+#crafting-toggle {
+  position:absolute; z-index:24; top:58px; left:104px; padding:6px 9px;
+  border:1px solid #cbd5e1; border-radius:6px; background:rgba(48,78,54,.94);
+  color:#fff; font-size:12px; font-weight:bold; pointer-events:auto;
+}
+@media (orientation:landscape) and (max-height:430px) {
+  #crafting-toggle { top:42px; left:78px; padding:4px 6px; font-size:10px; }
+}
+@media (max-width:700px) {
+  #inventory-toggle { top:42px; left:6px; }
+  #crafting-toggle { top:42px; left:79px; padding:4px 6px; font-size:10px; }
+}
+@media (orientation:landscape) and (max-height:430px) {
+  #inventory-toggle { top:42px; left:6px; }
+  #crafting-toggle { top:42px; left:75px; padding:4px 6px; font-size:10px; }
+}
+
+
+/* Menu overlay and very narrow landscape phones. */
+#main-menu-panel { position:absolute; inset:0; z-index:101; display:flex; align-items:center; justify-content:center; background:rgba(8,15,28,.84); }
+.main-menu-card h1 { color:#9ee493; font-size:clamp(24px,5vw,38px); }
+#menu-continue-button { background:#27633d; }
+#menu-new-button { background:#6b3c30; }
+@media (orientation:landscape) and (max-width:580px) {
+  #touch-controls button { min-width:34px; width:34px; min-height:36px; padding:2px; font-size:15px; }
+  #touch-break-button,#touch-place-button { min-width:34px !important; width:34px; }
+  #touch-attack-button,#touch-eat-button,#touch-interact-button { min-width:33px !important; width:33px; }
+  #touch-controls .move-controls,#touch-controls .action-controls { gap:2px; }
+  .furnace-slot { width:22vw; max-width:90px; }
+}
