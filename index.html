@@ -7,14 +7,14 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <link rel="icon" type="image/png" sizes="32x32" href="./icons/icon-192.png?v=30">
-  <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png?v=30">
-  <link rel="apple-touch-icon" sizes="192x192" href="./icons/icon-192.png?v=30">
+  <link rel="icon" type="image/png" sizes="32x32" href="./icons/icon-192.png?v=31">
+  <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png?v=31">
+  <link rel="apple-touch-icon" sizes="192x192" href="./icons/icon-192.png?v=31">
   <meta name="description" content="Minecraft2D Web — a small block-based browser game">
   <meta name="google-site-verification" content="zb-4Wvr7DXLQzDY0GIVp4xlPROYqOCzNad2AIF42dX8" />
   <title>Minecraft2D Web</title>
-  <link rel="manifest" href="./manifest.json?v=30">
-  <link rel="stylesheet" href="./style.css?v=30">
+  <link rel="manifest" href="./manifest.json?v=31">
+  <link rel="stylesheet" href="./style.css?v=31">
 </head>
 <body>
   <section id="rotate-screen" aria-live="polite">
@@ -90,6 +90,7 @@
         <button id="about-toggle" class="about-toggle" type="button" aria-expanded="false">دربارهٔ بازی و سازنده</button>
         <section id="about-panel" class="about-panel" hidden>
           <strong>سازنده: امیرعلی تبریزیان</strong>
+          <strong class="mentor-credit">منتور: منصوره رنجبریان</strong>
           <span>Developed by Amir Ali Tabrizian</span>
           <p>Minecraft2D یک بازی دوبعدی بلوکی برای ساخت‌وساز، اکتشاف و زنده‌ماندن است.</p>
         </section>
@@ -102,12 +103,12 @@
       <div class="action-controls"><button id="jump-button" type="button" aria-label="پرش" title="پرش">▲</button></div>
     </nav>
   </main>
-  <script src="./world.js?v=30"></script>
-  <script src="./survival.js?v=30"></script>
-  <script src="./script.js?v=30"></script>
+  <script src="./world.js?v=31"></script>
+  <script src="./survival.js?v=31"></script>
+  <script src="./script.js?v=31"></script>
   <script>
     if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
-      window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js?v=30', { updateViaCache: 'none' }).then(registration => registration.update()).catch(err => console.warn('Service worker registration failed:', err)));
+      window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js?v=31', { updateViaCache: 'none' }).then(registration => registration.update()).catch(err => console.warn('Service worker registration failed:', err)));
     }
   </script>
 </body>

@@ -207,6 +207,7 @@
   let walkTime = 0;
   let dragSourceIndex = null;
   let dragStartPoint = null;
+  let dragPointerId = null;
   let pendingTouchMoveIndex = null;
   let suppressSlotClick = false;
   let lastFoodTap = { index: -1, time: 0 };
@@ -469,9 +470,15 @@
     slot.draggable = false;
     slot.addEventListener("pointerdown", event => {
       if (event.button !== undefined && event.button !== 0) return;
+      // Capture the active pointer so touch/mouse release is still received
+      // when the pointer leaves the source slot during a drag.
       dragSourceIndex = index;
+      dragPointerId = event.pointerId;
       dragStartPoint = { x: event.clientX, y: event.clientY };
       slot.classList.add("drag-source");
+      if (typeof slot.setPointerCapture === "function") {
+        try { slot.setPointerCapture(event.pointerId); } catch (_) { /* fallback: document-level pointerup */ }
+      }
     });
     slot.addEventListener("click", event => {
       if (suppressSlotClick) { event.preventDefault(); event.stopPropagation(); return; }
@@ -513,11 +520,12 @@
   // Resolve drag destinations globally so pointer-up works even when the browser
   // reports the original slot as the event target. This supports mouse and touch.
   document.addEventListener("pointerup", event => {
-    if (dragSourceIndex === null) return;
+    if (dragSourceIndex === null || (dragPointerId !== null && event.pointerId !== dragPointerId)) return;
     const source = dragSourceIndex;
     const start = dragStartPoint;
     dragSourceIndex = null;
     dragStartPoint = null;
+    dragPointerId = null;
     document.querySelectorAll(".drag-source").forEach(el => el.classList.remove("drag-source"));
     const targetElement = document.elementFromPoint(event.clientX, event.clientY)?.closest?.(".inventory-slot");
     const target = targetElement && targetElement.dataset.slotIndex !== undefined ? Number(targetElement.dataset.slotIndex) : null;
@@ -531,9 +539,11 @@
       setTimeout(() => { suppressSlotClick = false; }, 80);
     }
   }, true);
-  document.addEventListener("pointercancel", () => {
+  document.addEventListener("pointercancel", event => {
+    if (dragPointerId !== null && event.pointerId !== dragPointerId) return;
     dragSourceIndex = null;
     dragStartPoint = null;
+    dragPointerId = null;
     document.querySelectorAll(".drag-source").forEach(el => el.classList.remove("drag-source"));
   });
 

@@ -71,22 +71,9 @@
     return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
   }
 
-  function segmentIntersectsRect(x1, y1, x2, y2, rx, ry, rw, rh) {
-    const dx = x2 - x1, dy = y2 - y1;
-    let tMin = 0, tMax = 1;
-    for (const [origin, delta, min, max] of [[x1, dx, rx, rx + rw], [y1, dy, ry, ry + rh]]) {
-      if (Math.abs(delta) < 1e-9) { if (origin < min || origin > max) return false; continue; }
-      let t1 = (min - origin) / delta, t2 = (max - origin) / delta;
-      if (t1 > t2) [t1, t2] = [t2, t1];
-      tMin = Math.max(tMin, t1); tMax = Math.min(tMax, t2);
-      if (tMin > tMax) return false;
-    }
-    return true;
-  }
-
   class MobSystem {
     constructor() { this.entities = []; this.arrows = []; this.spawnTimer = 0; this.wasNight = false; this.attackCooldown = 0; }
-    clearHostiles() { this.entities = this.entities.filter(m => m.alive && (m.kind === "sheep" || m.kind === "cow")); this.arrows.length = 0; }
+    clearHostiles() { this.entities = this.entities.filter(m => m.kind === "sheep" || m.kind === "cow"); this.arrows.length = 0; }
     count(kind) { return this.entities.filter(m => m.alive && m.kind === kind).length; }
     spawnOne(kind, player, world, BLOCK_SIZE, surfaceY) {
       const width = kind === "cow" ? 62 : kind === "sheep" ? 52 : kind === "zombie" ? 42 : 40;
@@ -139,14 +126,14 @@
           m.burning = !night && !roof;
           if (m.burning) { m.burnTimer += dt; if (m.burnTimer >= .45) { m.hp -= 4; m.burnTimer = 0; m.flash = .1; } } else m.burnTimer = 0;
           if (m.kind === "zombie") {
-            if (distance <= 48 && m.cooldown <= 0) { onPlayerDamage(2); m.cooldown = 1.15; }
+            if (distance <= 48 && m.cooldown <= 0) { onPlayerDamage(3); m.cooldown = 1; }
             if (distance <= 260) m.direction = dx >= 0 ? 1 : -1;
             else if (m.timer <= 0) { m.direction = Math.random() < .45 ? 0 : (Math.random() < .5 ? -1 : 1); m.timer = .8 + Math.random() * 2; }
           } else {
             if (distance < 190) m.direction = dx >= 0 ? -1 : 1;
             else if (distance <= 360 && m.cooldown <= 0 && night) {
-              this.arrows.push({ x: m.x + m.width / 2, y: m.y + 25, vx: Math.cos(Math.atan2(dy, dx)) * 330, vy: Math.sin(Math.atan2(dy, dx)) * 330, damage: 4, life: 3, alive: true });
-              m.cooldown = 3.2;
+              this.arrows.push({ x: m.x + m.width / 2, y: m.y + 25, vx: Math.cos(Math.atan2(dy, dx)) * 330, vy: Math.sin(Math.atan2(dy, dx)) * 330, damage: 10, life: 3, alive: true });
+              m.cooldown = 1.7;
             } else if (distance > 360 && m.timer <= 0) { m.direction = Math.random() < .4 ? 0 : (Math.random() < .5 ? -1 : 1); m.timer = 1 + Math.random() * 1.5; }
           }
         } else if (m.timer <= 0) { m.direction = Math.random() < .5 ? 0 : (Math.random() < .5 ? -1 : 1); m.timer = 1 + Math.random() * 2; }
@@ -164,27 +151,15 @@
         let landed = false;
         for (const b of feet) if (m.vy >= 0 && m.y + m.height <= b.y + 3 && nextY + m.height >= b.y && m.x < b.x + BLOCK_SIZE && m.x + m.width > b.x) { m.y = b.y - m.height; m.vy = 0; landed = true; break; }
         if (!landed) m.y = nextY;
-        if (m.hp <= 0 && m.alive) { m.alive = false; onDeath(m); }
+        if (m.hp <= 0) { m.alive = false; onDeath(m); }
       }
-      // A dead mob is removed regardless of its remaining hp value. Keeping
-      // dead entities caused stale objects to accumulate after non-damage deaths.
-      this.entities = this.entities.filter(m => m.alive);
+      this.entities = this.entities.filter(m => m.alive || m.hp > 0);
       for (const a of this.arrows) {
         if (!a.alive) continue;
-        const fromX = a.x, fromY = a.y;
-        const toX = fromX + a.vx * dt, toY = fromY + a.vy * dt;
-        a.life -= dt;
-        // Sweep the whole projectile segment (expanded by its small hit radius)
-        // so fast/diagonal arrows cannot tunnel through thin block corners.
-        const left = Math.min(fromX, toX) - 4, right = Math.max(fromX, toX) + 4;
-        const top = Math.min(fromY, toY) - 4, bottom = Math.max(fromY, toY) + 4;
-        const hitBlock = world.blocksInRect(left, top, right, bottom).some(b =>
-          segmentIntersectsRect(fromX, fromY, toX, toY, b.x - 4, b.y - 4, BLOCK_SIZE + 8, BLOCK_SIZE + 8));
-        if (hitBlock) { a.alive = false; continue; }
-        if (segmentIntersectsRect(fromX, fromY, toX, toY, player.x - 4, player.y - 4, player.width + 8, player.height + 8)) {
-          onPlayerDamage(a.damage || 4); a.alive = false;
-        }
-        a.x = toX; a.y = toY;
+        a.life -= dt; a.x += a.vx * dt; a.y += a.vy * dt;
+        const bx = Math.floor(a.x / BLOCK_SIZE) * BLOCK_SIZE, by = Math.floor(a.y / BLOCK_SIZE) * BLOCK_SIZE;
+        if (world.getAt(bx, by) && world.isSolid(world.getAt(bx, by))) a.alive = false;
+        if (a.x >= player.x && a.x <= player.x + player.width && a.y >= player.y && a.y <= player.y + player.height) { onPlayerDamage(a.damage || 10); a.alive = false; }
         if (a.life <= 0) a.alive = false;
       }
       this.arrows = this.arrows.filter(a => a.alive);
@@ -303,47 +278,26 @@
     load(data) { this.entities = Array.isArray(data?.entities) ? data.entities.filter(m => m && typeof m.kind === "string" && Number.isFinite(m.x) && Number.isFinite(m.y)).map(m => ({ ...m, alive: true })) : []; this.arrows = Array.isArray(data?.arrows) ? data.arrows.filter(a => Number.isFinite(a.x) && Number.isFinite(a.y)).map(a => ({ ...a, alive: true })) : []; this.wasNight = !!data?.wasNight; }
   }
 
-  function furnaceState() { return { input: null, fuel: null, output: null, burnTime: 0, cookTime: 0, cookItemType: null, animationTime: 0 }; }
+  function furnaceState() { return { input: null, fuel: null, output: null, burnTime: 0, cookTime: 0, animationTime: 0 }; }
   function updateFurnace(state, dt) {
-    const elapsed = Math.max(0, Number(dt) || 0);
-    state.animationTime = (Number(state.animationTime) || 0) + elapsed;
+    state.animationTime += dt;
     if (state.input && state.input.count > 0 && SMELT_RECIPES[state.input.type]) {
-      // Progress belongs to a particular input type. Never carry iron's partial
-      // progress into gold/meat after the input slot becomes empty or changes.
-      if (state.cookItemType !== state.input.type) {
-        state.cookItemType = state.input.type;
-        state.cookTime = 0;
-      }
       const result = SMELT_RECIPES[state.input.type];
-      let remaining = elapsed;
-      let guard = 0;
-      while (remaining > 0 && state.input && state.input.count > 0 && guard++ < 512) {
-        const outputOkay = !state.output || (state.output.type === result && state.output.count < 64);
-        if (!outputOkay) break;
-        if (state.burnTime <= 0) {
-          if (state.fuel?.type !== "coal" || state.fuel.count <= 0) break;
-          state.fuel.count--;
-          if (!state.fuel.count) state.fuel = null;
-          state.burnTime = 8;
+      const outputOkay = !state.output || (state.output.type === result && state.output.count < 64);
+      if (outputOkay) {
+        if (state.burnTime <= 0 && state.fuel?.type === "coal" && state.fuel.count > 0) {
+          state.fuel.count--; if (!state.fuel.count) state.fuel = null; state.burnTime = 8;
         }
-        const slice = Math.min(remaining, state.burnTime, 4 - state.cookTime);
-        if (slice <= 0) break;
-        state.burnTime = Math.max(0, state.burnTime - slice);
-        state.cookTime += slice;
-        remaining -= slice;
-        if (state.cookTime >= 4 - 1e-9) {
-          state.cookTime = 0;
-          state.input.count--;
-          if (!state.input.count) state.input = null;
-          if (state.output) state.output.count++;
-          else state.output = { type: result, count: 1 };
+        if (state.burnTime > 0) {
+          state.burnTime = Math.max(0, state.burnTime - dt);
+          state.cookTime += dt;
+          if (state.cookTime >= 4) {
+            state.cookTime -= 4; state.input.count--; if (!state.input.count) state.input = null;
+            if (state.output) state.output.count++; else state.output = { type: result, count: 1 };
+          }
         }
       }
-      if (!state.input) { state.cookTime = 0; state.cookItemType = null; }
-    } else {
-      state.cookTime = 0;
-      state.cookItemType = null;
-    }
+    } else state.cookTime = 0;
     for (const slot of ["input", "fuel", "output"]) if (state[slot] && (!state[slot].count || state[slot].count <= 0)) state[slot] = null;
   }
 

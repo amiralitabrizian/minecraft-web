@@ -680,7 +680,6 @@ body.needs-landscape #rotate-screen { display:flex; }
 .main-menu-card h1 { margin:0; color:#f5f8ee; font-size:clamp(26px,6vw,38px); letter-spacing:1px; text-shadow:0 3px #17232b; }
 .main-menu-card h1 b { color:#8fe16b; }
 .menu-subtitle { margin:0 0 5px; color:#c3d4df; font-size:14px; }
-.menu-mentor { margin-top:-8px; color:#b9f09d; font-size:11px; font-weight:700; }
 .menu-buttons { width:100%; display:grid; gap:8px; }
 .menu-buttons button { width:100%; min-height:43px; border:1px solid rgba(209,229,238,.33); border-radius:8px; background:linear-gradient(#3d607a,#2c455c); color:#fff; font: bold 14px Tahoma,Arial,sans-serif; box-shadow:0 3px 0 #172a39; transition:filter .15s,transform .15s; }
 .menu-buttons button:first-child { background:linear-gradient(#62a74e,#36733d); box-shadow:0 3px 0 #244b2b; }
@@ -854,3 +853,10 @@ body.needs-landscape #rotate-screen { display:flex; }
   .main-menu-card { padding:17px 19px 14px; gap:8px; }
   .about-panel { padding:8px 10px; }
 }
+
+
+/* v31: mentor credit and reliable touch drag/drop in the inventory. */
+.about-panel .mentor-credit { margin-top: 4px; color: #d6c6ff; font-size: 12px; }
+.inventory-grid-scroll { padding-inline: 10px; box-sizing: border-box; touch-action: pan-y; }
+.inventory-grid-scroll .inventory-slot { touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.inventory-grid-scroll .inventory-slot.drag-source { opacity: .5; outline: 2px dashed #7dd3fc; outline-offset: 1px; }
