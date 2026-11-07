@@ -1,63 +1,226 @@
-# Minecraft2D Web — v30 Test Report
+ "use strict";
 
-Test date: 2026-11-06
+/* Stage 1: deterministic chunk terrain and block interaction primitives. */
+(function () {
+  const BLOCK_SIZE = 40;
+  const CHUNK_BLOCKS = 20;
+  const CHUNK_SIZE = BLOCK_SIZE * CHUNK_BLOCKS;
+  const SEED = 12345;
+  const WORLD_BOTTOM = 1600;
+  const SOLID_TYPES = new Set(["grass", "dirt", "stone", "wood", "leaves", "leaf", "bedrock", "coal", "iron", "gold", "diamond", "planks", "crafting_table", "furnace"]);
+  const ALLOWED_TYPES = new Set([...SOLID_TYPES, "torch"]);
+  const COLORS = {
+    grass: { top: "#76d747", side: "#4d9d2a", detail: "#347d22" },
+    dirt: { top: "#99613a", side: "#774323", detail: "#60371f" },
+    stone: { top: "#a5a8ad", side: "#777b82", detail: "#5e6269" },
+    wood: { top: "#bd8950", side: "#86572f", detail: "#684224" },
+    leaves: { top: "#42ad43", side: "#287c30", detail: "#1c6325" },
+    leaf: { top: "#42ad43", side: "#287c30", detail: "#1c6325" },
+    bedrock: { top: "#343943", side: "#20242b", detail: "#101318" },
+    coal: { top: "#55585d", side: "#34373b", detail: "#17191c" },
+    iron: { top: "#c6a98c", side: "#8c7b6c", detail: "#dfcbb7" },
+    gold: { top: "#f3d34a", side: "#b68a16", detail: "#fff08a" },
+    diamond: { top: "#7ce5de", side: "#268f95", detail: "#c9ffff" },
+    planks: { top: "#c9955e", side: "#97613a", detail: "#6e472d" },
+    crafting_table: { top: "#b77b43", side: "#81512e", detail: "#d7ad70" },
+    furnace: { top: "#8b8d91", side: "#55585e", detail: "#34383f" },
+    torch: { top: "#ffe08a", side: "#a56a28", detail: "#ffb52e" }
+  };
 
-## Changes included in v30
+  function hashInt(n) {
+    let x = (n | 0) + SEED;
+    x = Math.imul(x ^ (x >>> 16), 0x45d9f3b);
+    x = Math.imul(x ^ (x >>> 16), 0x45d9f3b);
+    return (x ^ (x >>> 16)) >>> 0;
+  }
+  function seededRandom(n) {
+    let state = hashInt(n) || 1;
+    return function () {
+      state ^= state << 13; state ^= state >>> 17; state ^= state << 5;
+      return (state >>> 0) / 4294967296;
+    };
+  }
+  function surfaceY(blockX) {
+    const waveA = Math.sin(blockX / 520) * 85;
+    const waveB = Math.sin(blockX / 210) * 30;
+    const r = seededRandom(Math.floor(blockX / BLOCK_SIZE) * 17)();
+    const detail = r < 1 / 7 ? -BLOCK_SIZE : r > 6 / 7 ? BLOCK_SIZE : 0;
+    const raw = Math.max(200, Math.min(440, 320 + waveA + waveB + detail));
+    return Math.floor(raw / BLOCK_SIZE) * BLOCK_SIZE;
+  }
 
-- Added persistent independent music and sound-effect volume sliders in the main menu. The default music level is 18%, the default effects level is 100%, and zero volume mutes the selected audio bus.
-- Fixed default-volume initialization so an absent local-storage key uses the intended default rather than being interpreted as numeric zero.
-- Confirmed night-only zombie and skeleton spawning logic: the target population is three zombies and two skeletons around the player. Zombies chase and attack at close range; skeletons retreat when approached and shoot arrows within range. Hostiles are removed on the day transition and burn in uncovered daytime areas.
-- Confirmed the clock uses one in-game minute per real second, matching the original Python `GameTime`. It advances during active gameplay and pauses while the main menu/pause overlay is open. Opening inventory/crafting does not stop the clock.
-- Updated service-worker cache version and static asset query strings to v30.
+  class World {
+    constructor() {
+      this.blocks = [];
+      this.blockMap = new Map();
+      this.loadedChunks = new Set();
+      this.chunkOverrides = new Map();
+      this.generateAround(0);
+    }
+    key(x, y) { return `${x},${y}`; }
+    getAt(x, y) { return this.blockMap.get(this.key(x, y)) || null; }
+    addBlock(x, y, type, recordChange = true) {
+      x = Math.round(x / BLOCK_SIZE) * BLOCK_SIZE;
+      y = Math.round(y / BLOCK_SIZE) * BLOCK_SIZE;
+      if (!ALLOWED_TYPES.has(type) || this.getAt(x, y)) return null;
+      const block = { x, y, type };
+      this.blocks.push(block);
+      this.blockMap.set(this.key(x, y), block);
+      if (recordChange) this.setChunkOverride(x, y, type);
+      return block;
+    }
+    chunkStart(x) { return Math.floor(x / CHUNK_SIZE) * CHUNK_SIZE; }
+    setChunkOverride(x, y, type) {
+      const start = this.chunkStart(x);
+      if (!this.chunkOverrides.has(start)) this.chunkOverrides.set(start, new Map());
+      this.chunkOverrides.get(start).set(this.key(x, y), type);
+    }
+    removeBlock(block) {
+      if (!block || block.type === "bedrock" || this.getAt(block.x, block.y) !== block) return false;
+      this.blockMap.delete(this.key(block.x, block.y));
+      this.setChunkOverride(block.x, block.y, null);
+      const index = this.blocks.indexOf(block);
+      if (index >= 0) this.blocks.splice(index, 1);
+      return true;
+    }
+    generateChunk(startX) {
+      if (this.loadedChunks.has(startX)) return;
+      this.loadedChunks.add(startX);
+      for (let x = startX; x < startX + CHUNK_SIZE; x += BLOCK_SIZE) {
+        const groundY = surfaceY(x);
+        this.addBlock(x, groundY, "grass", false);
+        // A few dirt layers, followed by stone and a bottom bedrock layer.
+        for (let layer = 1; layer <= 4; layer++) this.addBlock(x, groundY + layer * BLOCK_SIZE, "dirt", false);
+        for (let y = groundY + 5 * BLOCK_SIZE; y < WORLD_BOTTOM - BLOCK_SIZE; y += BLOCK_SIZE) {
+          const depth = (y - groundY) / BLOCK_SIZE;
+          // Broad deterministic cave tunnels; the first few dirt/stone layers stay intact.
+          const caveNoise = Math.sin(x * 0.012 + Math.sin(y * 0.013) * 2.1) *
+            Math.cos(y * 0.009 + Math.sin(x * 0.007) * 1.8);
+          if (depth > 4 && caveNoise > 0.76) continue;
+          const oreRoll = seededRandom(Math.floor(x / BLOCK_SIZE) * 73856093 ^ Math.floor(y / BLOCK_SIZE) * 19349663)();
+          let blockType = "stone";
+          if (depth >= 5 && oreRoll < 0.030) blockType = "coal";
+          if (depth >= 9 && oreRoll > 0.965 && oreRoll < 0.980) blockType = "iron";
+          if (depth >= 16 && oreRoll > 0.991 && oreRoll < 0.997) blockType = "gold";
+          if (depth >= 24 && oreRoll > 0.9985) blockType = "diamond";
+          this.addBlock(x, y, blockType, false);
+        }
+        this.addBlock(x, WORLD_BOTTOM - BLOCK_SIZE, "bedrock", false);
 
-## Previous fixes retained from v29
+      }
+      // Generate tree pieces by the chunk that owns each piece, not only by
+      // the chunk containing the trunk. Canopies may cross a chunk boundary;
+      // regenerating a neighboring chunk must recreate those leaves too.
+      for (let originX = startX - 3 * BLOCK_SIZE; originX <= startX + CHUNK_SIZE + 3 * BLOCK_SIZE; originX += BLOCK_SIZE) {
+        const treeRng = seededRandom(Math.floor(originX / BLOCK_SIZE) * 7919 + 777777);
+        if (treeRng() >= 0.075) continue;
+        const groundY = surfaceY(originX);
+        const trunkHeight = 4 + Math.floor(treeRng() * 3);
+        const pieces = [];
+        for (let i = 0; i < trunkHeight; i++) pieces.push([originX, groundY - (i + 1) * BLOCK_SIZE, "wood"]);
+        const canopyY = groundY - (trunkHeight + 1) * BLOCK_SIZE;
+        for (let row = -2; row <= 2; row++) {
+          const width = 3 - Math.abs(row);
+          for (let offset = -width; offset <= width; offset++) {
+            if (treeRng() < (Math.abs(offset) < width ? 0.92 : 0.55))
+              pieces.push([originX + offset * BLOCK_SIZE, canopyY + row * BLOCK_SIZE, "leaves"]);
+          }
+        }
+        pieces.push([originX, canopyY - BLOCK_SIZE, "leaves"]);
+        for (const [pieceX, pieceY, type] of pieces) {
+          if (this.chunkStart(pieceX) === startX) this.addBlock(pieceX, pieceY, type, false);
+        }
+      }
+      const overrides = this.chunkOverrides.get(startX);
+      if (overrides) {
+        for (const [key, type] of overrides) {
+          const [ox, oy] = key.split(",").map(Number);
+          const existing = this.getAt(ox, oy);
+          if (existing) {
+            this.blockMap.delete(key);
+            const idx = this.blocks.indexOf(existing);
+            if (idx >= 0) this.blocks.splice(idx, 1);
+          }
+          if (type) this.addBlock(ox, oy, type, false);
+        }
+      }
+    }
+    generateAround(worldX) {
+      const center = this.chunkStart(worldX);
+      const required = new Set();
+      for (let offset = -3; offset <= 4; offset++) {
+        const chunk = center + offset * CHUNK_SIZE;
+        required.add(chunk);
+        this.generateChunk(chunk);
+      }
+      // Unload distant chunks to keep mobile memory and rendering costs bounded.
+      for (const chunk of [...this.loadedChunks]) {
+        if (required.has(chunk)) continue;
+        this.loadedChunks.delete(chunk);
+        for (let i = this.blocks.length - 1; i >= 0; i--) {
+          const block = this.blocks[i];
+          if (this.chunkStart(block.x) === chunk) {
+            this.blockMap.delete(this.key(block.x, block.y));
+            this.blocks.splice(i, 1);
+          }
+        }
+      }
+    }
+    exportChanges() {
+      return [...this.chunkOverrides.entries()].map(([chunk, entries]) => [chunk, [...entries.entries()]]);
+    }
+    importChanges(data, aroundX = 0) {
+      this.blocks.length = 0;
+      this.blockMap.clear();
+      this.loadedChunks.clear();
+      this.chunkOverrides.clear();
+      if (Array.isArray(data)) {
+        for (const row of data) {
+          if (!Array.isArray(row) || !Number.isFinite(Number(row[0])) || !Array.isArray(row[1])) continue;
+          const entries = new Map();
+          for (const entry of row[1]) {
+            if (!Array.isArray(entry) || typeof entry[0] !== "string") continue;
+            const type = entry[1];
+            if (type !== null && !ALLOWED_TYPES.has(type)) continue;
+            entries.set(entry[0], type);
+          }
+          this.chunkOverrides.set(Number(row[0]), entries);
+        }
+      }
+      this.generateAround(aroundX);
+    }
+    blocksInRect(left, top, right, bottom, includeNonSolid = false) {
+      const result = [];
+      const startX = Math.floor(left / BLOCK_SIZE) * BLOCK_SIZE;
+      const endX = Math.floor(right / BLOCK_SIZE) * BLOCK_SIZE;
+      const startY = Math.floor(top / BLOCK_SIZE) * BLOCK_SIZE;
+      const endY = Math.floor(bottom / BLOCK_SIZE) * BLOCK_SIZE;
+      for (let y = startY; y <= endY; y += BLOCK_SIZE) {
+        for (let x = startX; x <= endX; x += BLOCK_SIZE) {
+          const block = this.getAt(x, y);
+          // Physics queries stay solid-only. Rendering can explicitly include
+          // non-solid objects such as torches, which must remain visible.
+          if (block && (includeNonSolid || this.isSolid(block))) result.push(block);
+        }
+      }
+      return result;
+    }
+    isSolid(block) { return !!block && SOLID_TYPES.has(block.type); }
+    canPlace(x, y, player) {
+      const bx = Math.round(x / BLOCK_SIZE) * BLOCK_SIZE;
+      const by = Math.round(y / BLOCK_SIZE) * BLOCK_SIZE;
+      if (this.getAt(bx, by)) return false;
+      const hasNeighbor = [[BLOCK_SIZE,0],[-BLOCK_SIZE,0],[0,BLOCK_SIZE],[0,-BLOCK_SIZE]]
+        .some(([dx,dy]) => this.getAt(bx + dx, by + dy));
+      if (!hasNeighbor) return false;
+      if (player && rectanglesOverlap(bx, by, BLOCK_SIZE, BLOCK_SIZE, player.x, player.y, player.width, player.height)) return false;
+      return { x: bx, y: by };
+    }
+  }
 
-- Non-solid world objects such as torches are included in the renderer query; solid-only collision queries remain unchanged.
-- A torch is drawn as an upright wooden stick with an animated flame and a warm glow. It can be placed in a supported empty cell above a solid block, and placement avoids intersecting the player.
-- Dropped items use their own sprite drawing routine for ores, blocks, ingots, tools, food, wool, bones, sticks, and torches. Inventory CSS icons also have separate designs for ores, tools, and common items.
-- The first-run Save action is enabled. Continue and Load remain disabled until a save exists. The menu reports save success or failure.
-- Mobile Help and About/creator information are available without permanently occupying the gameplay screen.
-- The drop pickup path avoids rebuilding the whole Inventory DOM every frame when the inventory cannot accept an item; inventory rendering is batched when pickup succeeds.
-- Lighting checks visible torches rather than scanning every loaded world block each frame. Mobile canvas pixel ratio and render cadence are capped.
+  function rectanglesOverlap(ax, ay, aw, ah, bx, by, bw, bh) {
+    return ax < bx + bw && ax + aw > bx && ay < by + bh && ay + ah > by;
+  }
 
-## Automated checks completed
-
-- `node --check` passed for `script.js`, `world.js`, `survival.js`, and `sw.js`.
-- Chromium smoke tests passed at desktop 1365×768, mobile landscape 844×390 (touch emulation), and compact mobile landscape 720×360 (touch emulation).
-- In all three viewports: main menu opened, first-run Save was enabled, About displayed `امیرعلی تبریزیان`, Save created a local save, Load became enabled, Load returned to gameplay, Inventory opened, duplicate HTML IDs were absent, and no JavaScript page errors or console errors were recorded.
-- In both mobile viewport tests: exactly three movement buttons were present (left, right, jump); Help opened and closed and included mining instructions.
-- A touch-emulated placement test placed a torch above a solid ground block. The save contained the torch world override and the inventory count decreased from 16 to 15. Reloading that save restored the torch visibly in gameplay.
-- A night-state test loaded the saved world at 21:00. The HUD showed NIGHT, the sky darkened, stars appeared, and the placed torch emitted a visible warm light pool.
-- Node world test confirmed that normal physics queries exclude torches while renderer queries using `includeNonSolid=true` include them.
-- The sun/moon timing was left unchanged: sunrise phase begins at 05:00, daytime begins at 06:00, sunset begins at 17:00, and night begins at 20:00. These times match the original Python GameTime logic.
-
-## Not verified on physical hardware
-
-These are automated Chromium tests using desktop/mobile viewport and touch emulation, not tests on actual phones. No physical Android, iPhone/Safari, or multiple laptop models were available. Therefore v29 is not certified error-free on every device. Real-device checks are still required for touch precision, sound autoplay permissions, installed-PWA/offline behavior, browser storage limits, and device-specific performance.
-
-## Manual checks before release
-
-1. On an Android phone in landscape, place torches on the ground and verify the flame remains visible after moving away and returning.
-2. Save, close the tab, reopen the site, and load the world. Confirm torches, inventory, clock, health, hunger, drops, mobs, and furnace contents persist.
-3. Check Safari on iPhone if iOS support is required.
-4. Confirm music and sound effects start after a user gesture and that the sound toggle behaves correctly.
-5. Install the PWA, open it offline, and check the UI and sound files.
-6. Play for several minutes on a lower-end phone and note any slowdown or heat.
-
-## Storage note
-
-World saves are stored locally in the current browser on the current device. They do not automatically synchronize between different phones or computers.
-
-
-## v30 automated checks
-
-- `node --check` passed for `script.js`, `world.js`, `survival.js`, and `sw.js`.
-- Unit simulation of `MobSystem.spawnForPhase` with an empty test world spawned three zombies and two skeletons during night and no hostiles during day.
-- `GameClock` timing check: 10 real seconds advanced the clock by 10 in-game minutes; a 24-hour game cycle corresponds to 24 real minutes, matching the original Python timing constant.
-- Audio-module test with mocked browser audio objects confirmed defaults of music 18% / effects 100%, persistence of slider values, music gain scaling, and sound-effect gain scaling (for example, a 65% effect at a 50% master-effects setting plays at 32.5%).
-- Source-level check confirms the main update loop returns before `clock.update(dt)` while the main menu/pause overlay is visible; gameplay panels do not trigger that return.
-- Verified that index script/style references and service-worker cache use v30.
-
-## Not run in this environment
-
-- A full interactive browser test with audio playback and range-slider input was not available in this runtime. No physical Android/iPhone or laptop hardware test was performed. Check volume sliders and mob spawns in the published v30 build before treating this release as device-verified.
+  window.MinecraftWorld = { World, BLOCK_SIZE, CHUNK_SIZE, COLORS, SOLID_TYPES, ALLOWED_TYPES, rectanglesOverlap, surfaceY };
+})();

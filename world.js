@@ -107,21 +107,28 @@
         }
         this.addBlock(x, WORLD_BOTTOM - BLOCK_SIZE, "bedrock", false);
 
-        // Deterministic, sparse trees inspired by the original project's chunk terrain.
-        const treeRng = seededRandom(Math.floor(x / BLOCK_SIZE) * 7919 + 777777);
-        if (treeRng() < 0.075) {
-          const trunkHeight = 4 + Math.floor(treeRng() * 3);
-          for (let i = 0; i < trunkHeight; i++) this.addBlock(x, groundY - (i + 1) * BLOCK_SIZE, "wood", false);
-          const canopyY = groundY - (trunkHeight + 1) * BLOCK_SIZE;
-          for (let row = -2; row <= 2; row++) {
-            const width = 3 - Math.abs(row);
-            for (let offset = -width; offset <= width; offset++) {
-              if (treeRng() < (Math.abs(offset) < width ? 0.92 : 0.55)) {
-                this.addBlock(x + offset * BLOCK_SIZE, canopyY + row * BLOCK_SIZE, "leaves", false);
-              }
-            }
+      }
+      // Generate tree pieces by the chunk that owns each piece, not only by
+      // the chunk containing the trunk. Canopies may cross a chunk boundary;
+      // regenerating a neighboring chunk must recreate those leaves too.
+      for (let originX = startX - 3 * BLOCK_SIZE; originX <= startX + CHUNK_SIZE + 3 * BLOCK_SIZE; originX += BLOCK_SIZE) {
+        const treeRng = seededRandom(Math.floor(originX / BLOCK_SIZE) * 7919 + 777777);
+        if (treeRng() >= 0.075) continue;
+        const groundY = surfaceY(originX);
+        const trunkHeight = 4 + Math.floor(treeRng() * 3);
+        const pieces = [];
+        for (let i = 0; i < trunkHeight; i++) pieces.push([originX, groundY - (i + 1) * BLOCK_SIZE, "wood"]);
+        const canopyY = groundY - (trunkHeight + 1) * BLOCK_SIZE;
+        for (let row = -2; row <= 2; row++) {
+          const width = 3 - Math.abs(row);
+          for (let offset = -width; offset <= width; offset++) {
+            if (treeRng() < (Math.abs(offset) < width ? 0.92 : 0.55))
+              pieces.push([originX + offset * BLOCK_SIZE, canopyY + row * BLOCK_SIZE, "leaves"]);
           }
-          this.addBlock(x, canopyY - BLOCK_SIZE, "leaves", false);
+        }
+        pieces.push([originX, canopyY - BLOCK_SIZE, "leaves"]);
+        for (const [pieceX, pieceY, type] of pieces) {
+          if (this.chunkStart(pieceX) === startX) this.addBlock(pieceX, pieceY, type, false);
         }
       }
       const overrides = this.chunkOverrides.get(startX);
