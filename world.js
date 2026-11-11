@@ -141,7 +141,8 @@
     generateAround(worldX) {
       const center = this.chunkStart(worldX);
       const required = new Set();
-      for (let offset = -3; offset <= 4; offset++) {
+      // Five nearby chunks keep world generation and memory use lighter on phones.
+      for (let offset = -2; offset <= 2; offset++) {
         const chunk = center + offset * CHUNK_SIZE;
         required.add(chunk);
         this.generateChunk(chunk);

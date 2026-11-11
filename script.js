@@ -248,7 +248,8 @@
   function resizeCanvas() {
     const rect = gameShell.getBoundingClientRect();
     const touchLike = navigator.maxTouchPoints > 0 || matchMedia("(pointer: coarse)").matches;
-    dpr = Math.max(1, Math.min(window.devicePixelRatio || 1, touchLike ? 1.5 : 2));
+    // A lighter mobile canvas backing store reduces fill and drawing cost.
+    dpr = Math.max(1, Math.min(window.devicePixelRatio || 1, touchLike ? 1.25 : 2));
     canvas.width = Math.max(1, Math.round(rect.width * dpr));
     canvas.height = Math.max(1, Math.round(rect.height * dpr));
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);

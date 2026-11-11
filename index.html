@@ -7,14 +7,14 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <link rel="icon" type="image/png" sizes="32x32" href="./icons/icon-192.png?v=31">
-  <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png?v=31">
-  <link rel="apple-touch-icon" sizes="192x192" href="./icons/icon-192.png?v=31">
+  <link rel="icon" type="image/png" sizes="32x32" href="./icons/icon-192.png?v=32">
+  <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png?v=32">
+  <link rel="apple-touch-icon" sizes="192x192" href="./icons/icon-192.png?v=32">
   <meta name="description" content="Minecraft2D Web — a small block-based browser game">
   <meta name="google-site-verification" content="zb-4Wvr7DXLQzDY0GIVp4xlPROYqOCzNad2AIF42dX8" />
   <title>Minecraft2D Web</title>
-  <link rel="manifest" href="./manifest.json?v=31">
-  <link rel="stylesheet" href="./style.css?v=31">
+  <link rel="manifest" href="./manifest.json?v=32">
+  <link rel="stylesheet" href="./style.css?v=32">
 </head>
 <body>
   <section id="rotate-screen" aria-live="polite">
@@ -103,12 +103,12 @@
       <div class="action-controls"><button id="jump-button" type="button" aria-label="پرش" title="پرش">▲</button></div>
     </nav>
   </main>
-  <script src="./world.js?v=31"></script>
-  <script src="./survival.js?v=31"></script>
-  <script src="./script.js?v=31"></script>
+  <script src="./world.js?v=32"></script>
+  <script src="./survival.js?v=32"></script>
+  <script src="./script.js?v=32"></script>
   <script>
     if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
-      window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js?v=31', { updateViaCache: 'none' }).then(registration => registration.update()).catch(err => console.warn('Service worker registration failed:', err)));
+      window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js?v=32', { updateViaCache: 'none' }).then(registration => registration.update()).catch(err => console.warn('Service worker registration failed:', err)));
     }
   </script>
 </body>
