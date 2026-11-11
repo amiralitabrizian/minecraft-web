@@ -860,3 +860,122 @@ body.needs-landscape #rotate-screen { display:flex; }
 .inventory-grid-scroll { padding-inline: 10px; box-sizing: border-box; touch-action: pan-y; }
 .inventory-grid-scroll .inventory-slot { touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
 .inventory-grid-scroll .inventory-slot.drag-source { opacity: .5; outline: 2px dashed #7dd3fc; outline-offset: 1px; }
+
+/* v32: bottom-docked mobile hotbar + softer, clearer game interface. */
+:root {
+  --ui-glass: rgba(12, 23, 35, .88);
+  --ui-line: rgba(226, 240, 250, .28);
+  --ui-shadow: 0 7px 22px rgba(0, 0, 0, .28);
+}
+#game-shell {
+  background: linear-gradient(180deg, #79c9ed 0%, #b7e5ef 48%, #6c9b58 100%);
+}
+#quick-tools button,
+#clock-hud,
+#vitals-hud,
+#hotbar {
+  border-color: var(--ui-line);
+  background: var(--ui-glass);
+  box-shadow: var(--ui-shadow);
+  backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: blur(7px);
+}
+#quick-tools button {
+  transition: transform .14s ease, background .14s ease, border-color .14s ease;
+}
+#quick-tools button:active { transform: scale(.94); background: rgba(65, 100, 126, .95); }
+#hotbar {
+  border: 1px solid rgba(235, 246, 255, .5);
+  border-radius: 11px;
+  padding: 5px;
+}
+.inventory-slot {
+  border-radius: 6px;
+  border-color: rgba(210, 225, 238, .62);
+  transition: border-color .12s ease, background .12s ease, transform .12s ease;
+}
+.inventory-slot:active { transform: scale(.96); }
+.inventory-slot.selected {
+  border: 3px solid #ffe27a;
+  box-shadow: 0 0 0 1px rgba(255, 236, 160, .55), 0 0 14px rgba(255, 218, 91, .42);
+}
+#inventory-panel:not([hidden]),
+.system-panel {
+  border: 1px solid rgba(221, 237, 248, .56);
+  background: linear-gradient(150deg, rgba(31, 48, 66, .98), rgba(12, 23, 37, .98));
+  box-shadow: 0 18px 55px rgba(0, 0, 0, .55);
+  backdrop-filter: blur(10px);
+}
+#inventory-panel .inventory-title,
+.system-panel-head { color: #f4f8fb; }
+#touch-controls button {
+  border: 1px solid rgba(240, 248, 255, .5);
+  background: rgba(17, 34, 49, .82);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, .3);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+}
+#touch-controls button:active { background: rgba(75, 125, 151, .96); }
+
+/* On phones: the 1–9 bar is always visible and sits directly on the bottom edge.
+   Movement and jump buttons move just above it so they do not cover the slots. */
+@media (pointer: coarse), (hover: none), (max-width: 700px) {
+  #hotbar {
+    left: 50%;
+    bottom: max(4px, env(safe-area-inset-bottom, 0px)) !important;
+    transform: translateX(-50%);
+    z-index: 42;
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 2px;
+    padding: 4px;
+    max-width: calc(100vw - 10px);
+    border-radius: 9px;
+  }
+  #hotbar .inventory-slot {
+    flex: 0 1 clamp(25px, 7.5vw, 36px);
+    width: clamp(25px, 7.5vw, 36px);
+    min-width: 0;
+    height: clamp(29px, 8vw, 37px);
+  }
+  #touch-controls {
+    bottom: calc(46px + env(safe-area-inset-bottom, 0px)) !important;
+    height: 42px;
+    z-index: 41;
+  }
+  #touch-controls .move-controls,
+  #touch-controls .action-controls { bottom: 0; }
+  #touch-controls button {
+    width: 39px;
+    min-width: 39px;
+    height: 40px;
+    min-height: 40px;
+    border-radius: 10px;
+  }
+  #inventory-panel:not([hidden]) {
+    max-height: calc(100dvh - 88px);
+  }
+}
+
+@media (orientation: landscape) and (max-height: 430px) {
+  #hotbar {
+    bottom: max(3px, env(safe-area-inset-bottom, 0px)) !important;
+  }
+  #hotbar .inventory-slot {
+    flex-basis: clamp(23px, 4.1vw, 30px);
+    width: clamp(23px, 4.1vw, 30px);
+    height: 29px;
+  }
+  #touch-controls {
+    bottom: calc(38px + env(safe-area-inset-bottom, 0px)) !important;
+    height: 35px;
+  }
+  #touch-controls button {
+    width: 33px;
+    min-width: 33px;
+    height: 34px;
+    min-height: 34px;
+    font-size: 16px;
+  }
+}
