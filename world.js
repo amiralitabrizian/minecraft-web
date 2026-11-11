@@ -55,7 +55,8 @@
       this.blockMap = new Map();
       this.loadedChunks = new Set();
       this.chunkOverrides = new Map();
-      this.generateAround(0);
+      // World generation is deferred until the saved world is checked.
+      // This avoids generating a temporary world before loading a save.
     }
     key(x, y) { return `${x},${y}`; }
     getAt(x, y) { return this.blockMap.get(this.key(x, y)) || null; }
@@ -125,16 +126,27 @@
         }
       }
       const overrides = this.chunkOverrides.get(startX);
-      if (overrides) {
-        for (const [key, type] of overrides) {
-          const [ox, oy] = key.split(",").map(Number);
-          const existing = this.getAt(ox, oy);
-          if (existing) {
-            this.blockMap.delete(key);
-            const idx = this.blocks.indexOf(existing);
-            if (idx >= 0) this.blocks.splice(idx, 1);
+      if (overrides && overrides.size) {
+        // Apply all saved edits in linear time. The old per-entry indexOf/splice
+        // made loading large saves progressively slower (O(blocks × edits)).
+        const changedKeys = new Set(overrides.keys());
+        for (const key of changedKeys) this.blockMap.delete(key);
+
+        let write = 0;
+        for (let read = 0; read < this.blocks.length; read++) {
+          const block = this.blocks[read];
+          if (!changedKeys.has(this.key(block.x, block.y))) {
+            this.blocks[write++] = block;
           }
-          if (type) this.addBlock(ox, oy, type, false);
+        }
+        this.blocks.length = write;
+
+        for (const [key, type] of overrides) {
+          if (!type) continue;
+          const comma = key.indexOf(",");
+          const ox = Number(key.slice(0, comma));
+          const oy = Number(key.slice(comma + 1));
+          if (Number.isFinite(ox) && Number.isFinite(oy)) this.addBlock(ox, oy, type, false);
         }
       }
     }
@@ -147,17 +159,26 @@
         required.add(chunk);
         this.generateChunk(chunk);
       }
-      // Unload distant chunks to keep mobile memory and rendering costs bounded.
-      for (const chunk of [...this.loadedChunks]) {
-        if (required.has(chunk)) continue;
-        this.loadedChunks.delete(chunk);
-        for (let i = this.blocks.length - 1; i >= 0; i--) {
-          const block = this.blocks[i];
-          if (this.chunkStart(block.x) === chunk) {
+      // Unload distant chunks with one compacting pass instead of repeatedly
+      // splicing the blocks array (which can become expensive on large worlds).
+      const unload = new Set();
+      for (const chunk of this.loadedChunks) {
+        if (!required.has(chunk)) {
+          unload.add(chunk);
+          this.loadedChunks.delete(chunk);
+        }
+      }
+      if (unload.size) {
+        let write = 0;
+        for (let read = 0; read < this.blocks.length; read++) {
+          const block = this.blocks[read];
+          if (unload.has(this.chunkStart(block.x))) {
             this.blockMap.delete(this.key(block.x, block.y));
-            this.blocks.splice(i, 1);
+          } else {
+            this.blocks[write++] = block;
           }
         }
+        this.blocks.length = write;
       }
     }
     exportChanges() {

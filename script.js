@@ -1761,12 +1761,13 @@
   window.addEventListener("orientationchange", () => requestAnimationFrame(() => { updateDeviceMode(); resizeCanvas(); }));
   if (screen.orientation && screen.orientation.addEventListener) screen.orientation.addEventListener("change", () => requestAnimationFrame(() => { updateDeviceMode(); resizeCanvas(); }));
 
-  // Spawn directly above the generated surface, matching the original game's terrain start.
+  // Check/load the saved world before generating a fresh one. Previously the
+  // default terrain was generated first and immediately discarded by Load.
   player.y = surfaceY(player.x) - player.height;
   player.onGround = false;
-  world.generateAround(player.x);
   renderInventory();
   const resumed = loadGame(false);
+  if (!resumed) world.generateAround(player.x);
   if (mainMenuPanel) mainMenuPanel.hidden = false;
   refreshMenuButtons();
   Sound.updateButton();
