@@ -7,14 +7,14 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <link rel="icon" type="image/png" sizes="32x32" href="./icons/icon-192.png?v=32">
-  <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png?v=32">
-  <link rel="apple-touch-icon" sizes="192x192" href="./icons/icon-192.png?v=32">
+  <link rel="icon" type="image/png" sizes="32x32" href="./icons/icon-192.png?v=36">
+  <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png?v=36">
+  <link rel="apple-touch-icon" sizes="192x192" href="./icons/icon-192.png?v=36">
   <meta name="description" content="Minecraft2D Web — a small block-based browser game">
   <meta name="google-site-verification" content="zb-4Wvr7DXLQzDY0GIVp4xlPROYqOCzNad2AIF42dX8" />
   <title>Minecraft2D Web</title>
-  <link rel="manifest" href="./manifest.json?v=32">
-  <link rel="stylesheet" href="./style.css?v=32">
+  <link rel="manifest" href="./manifest.json?v=36">
+  <link rel="stylesheet" href="./style.css?v=36">
 </head>
 <body>
   <section id="rotate-screen" aria-live="polite">
@@ -87,6 +87,29 @@
           <label class="volume-control" for="music-volume"><span>صدای موسیقی</span><output id="music-volume-value" for="music-volume">18%</output><input id="music-volume" type="range" min="0" max="100" step="1" value="18"></label>
           <label class="volume-control" for="effects-volume"><span>صدای افکت‌ها</span><output id="effects-volume-value" for="effects-volume">100%</output><input id="effects-volume" type="range" min="0" max="100" step="1" value="100"></label>
         </section>
+        <button id="feedback-toggle" class="feedback-toggle" type="button" aria-expanded="false" aria-controls="feedback-panel">✉ ارسال نظر و پیشنهاد</button>
+        <section id="feedback-panel" class="feedback-panel" hidden aria-label="نظرات و پیشنهادات">
+          <div class="feedback-heading">
+            <strong>نظرات و پیشنهادات</strong>
+            <span>نظرت را دربارهٔ Minecraft2D با سازنده به اشتراک بگذار!</span>
+          </div>
+          <form id="feedback-form" class="feedback-form" novalidate>
+            <label for="feedback-name">نام بازیکن <small>(اختیاری)</small></label>
+            <input id="feedback-name" name="name" type="text" maxlength="40" autocomplete="nickname" placeholder="نام دلخواهت...">
+            <label for="feedback-topic">موضوع پیام</label>
+            <select id="feedback-topic" name="topic" required>
+              <option value="پیشنهاد">پیشنهاد</option>
+              <option value="انتقاد">انتقاد</option>
+              <option value="گزارش مشکل">گزارش مشکل</option>
+              <option value="نظر درباره بازی">نظر درباره بازی</option>
+            </select>
+            <label for="feedback-message">متن پیام</label>
+            <textarea id="feedback-message" name="message" rows="4" minlength="3" maxlength="1500" required placeholder="پیامت را اینجا بنویس..."></textarea>
+            <input class="feedback-honeypot" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+            <button id="feedback-submit" type="submit">ارسال پیام</button>
+            <p id="feedback-status" class="feedback-status" role="status" aria-live="polite">پیام فقط برای سازنده ارسال می‌شود و در سایت نمایش داده نمی‌شود.</p>
+          </form>
+        </section>
         <button id="about-toggle" class="about-toggle" type="button" aria-expanded="false">دربارهٔ بازی و سازنده</button>
         <section id="about-panel" class="about-panel" hidden>
           <strong>سازنده: امیرعلی تبریزیان</strong>
@@ -103,12 +126,13 @@
       <div class="action-controls"><button id="jump-button" type="button" aria-label="پرش" title="پرش">▲</button></div>
     </nav>
   </main>
-  <script src="./world.js?v=32"></script>
-  <script src="./survival.js?v=32"></script>
-  <script src="./script.js?v=32"></script>
+  <script src="./world.js?v=36"></script>
+  <script src="./survival.js?v=36"></script>
+  <script src="./script.js?v=36"></script>
+  <script src="./feedback.js?v=36" defer></script>
   <script>
     if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
-      window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js?v=32', { updateViaCache: 'none' }).then(registration => registration.update()).catch(err => console.warn('Service worker registration failed:', err)));
+      window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js?v=36', { updateViaCache: 'none' }).then(registration => registration.update()).catch(err => console.warn('Service worker registration failed:', err)));
     }
   </script>
 </body>

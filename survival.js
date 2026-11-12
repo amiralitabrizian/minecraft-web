@@ -78,8 +78,7 @@
     spawnOne(kind, player, world, BLOCK_SIZE, surfaceY) {
       const width = kind === "cow" ? 62 : kind === "sheep" ? 52 : kind === "zombie" ? 42 : 40;
       const height = kind === "cow" ? 56 : kind === "sheep" ? 50 : 62;
-      // Keep spawn searches bounded on low-end phones.
-      for (let tries = 0; tries < 12; tries++) {
+      for (let tries = 0; tries < 50; tries++) {
         const dir = Math.random() < .5 ? -1 : 1;
         const x = Math.round((player.x + dir * (260 + Math.random() * 420)) / BLOCK_SIZE) * BLOCK_SIZE;
         const ground = surfaceY(x);
@@ -92,43 +91,32 @@
           if (rectsOverlap(rect, { x: b.x, y: b.y, width: BLOCK_SIZE, height: BLOCK_SIZE })) { blocked = true; break; }
         }
         if (blocked) continue;
-        this.entities.push({ kind, x, y, width, height, hp: kind === "sheep" ? 20 : kind === "cow" ? 25 : kind === "zombie" ? 30 : 24,
-          maxHp: kind === "sheep" ? 20 : kind === "cow" ? 25 : kind === "zombie" ? 30 : 24,
+        this.entities.push({ kind, x, y, width, height, hp: kind === "sheep" ? 20 : kind === "cow" ? 25 : kind === "zombie" ? 20 : 24,
+          maxHp: kind === "sheep" ? 20 : kind === "cow" ? 25 : kind === "zombie" ? 20 : 24,
           vx: 0, vy: 0, direction: Math.random() < .5 ? -1 : 1, timer: .8 + Math.random() * 2,
           cooldown: .5 + Math.random(), walk: Math.random() * 6, alive: true, burning: false, burnTimer: 0, flash: 0 });
         return true;
       }
       return false;
     }
-    spawnNext(player, world, BLOCK_SIZE, surfaceY, night) {
-      const targets = night
-        ? [["zombie", 3], ["skeleton", 2]]
-        : [["sheep", 3], ["cow", 3]];
-      for (const [kind, limit] of targets) {
-        if (this.count(kind) >= limit) continue;
-        this.spawnOne(kind, player, world, BLOCK_SIZE, surfaceY);
-        return;
+    spawnForPhase(player, world, BLOCK_SIZE, surfaceY, night) {
+      const counts = { sheep: 3, cow: 3, zombie: 2, skeleton: 2 };
+      for (const kind of Object.keys(counts)) {
+        if ((kind === "zombie" || kind === "skeleton") !== night) continue;
+        let guard = counts[kind] - this.count(kind);
+        while (guard-- > 0) if (!this.spawnOne(kind, player, world, BLOCK_SIZE, surfaceY)) break;
       }
     }
     update(dt, player, world, BLOCK_SIZE, surfaceY, night, onPlayerDamage, onDeath) {
       this.spawnTimer += dt;
-      if (night !== this.wasNight) {
-        if (!night) this.clearHostiles();
-        this.wasNight = night;
-        this.spawnTimer = 1.0;
-      }
-      // Spawn one mob per interval instead of creating a group in a single frame.
-      if (this.spawnTimer >= 1.4) {
-        this.spawnTimer = 0;
-        this.spawnNext(player, world, BLOCK_SIZE, surfaceY, night);
+      if (night !== this.wasNight || this.spawnTimer >= 4) {
+        if (night !== this.wasNight && !night) this.clearHostiles();
+        this.wasNight = night; this.spawnTimer = 0;
+        this.spawnForPhase(player, world, BLOCK_SIZE, surfaceY, night);
       }
       this.attackCooldown = Math.max(0, this.attackCooldown - dt);
       for (const m of this.entities) {
         if (!m.alive) continue;
-        // Pause distant mobs until the player approaches them.
-        const mobDX = (m.x + m.width / 2) - (player.x + player.width / 2);
-        const mobDY = (m.y + m.height / 2) - (player.y + player.height / 2);
-        if (Math.abs(mobDX) > 1100 || Math.abs(mobDY) > 750) continue;
         m.flash = Math.max(0, m.flash - dt); m.cooldown = Math.max(0, m.cooldown - dt); m.timer -= dt;
         if (m.kind === "zombie" || m.kind === "skeleton") {
           const dx = (player.x + player.width / 2) - (m.x + m.width / 2);
@@ -138,7 +126,7 @@
           m.burning = !night && !roof;
           if (m.burning) { m.burnTimer += dt; if (m.burnTimer >= .45) { m.hp -= 4; m.burnTimer = 0; m.flash = .1; } } else m.burnTimer = 0;
           if (m.kind === "zombie") {
-            if (distance <= 48 && m.cooldown <= 0) { onPlayerDamage(3); m.cooldown = 1; }
+            if (distance <= 48 && m.cooldown <= 0) { onPlayerDamage(2); m.cooldown = 1.2; }
             if (distance <= 260) m.direction = dx >= 0 ? 1 : -1;
             else if (m.timer <= 0) { m.direction = Math.random() < .45 ? 0 : (Math.random() < .5 ? -1 : 1); m.timer = .8 + Math.random() * 2; }
           } else {
@@ -149,7 +137,7 @@
             } else if (distance > 360 && m.timer <= 0) { m.direction = Math.random() < .4 ? 0 : (Math.random() < .5 ? -1 : 1); m.timer = 1 + Math.random() * 1.5; }
           }
         } else if (m.timer <= 0) { m.direction = Math.random() < .5 ? 0 : (Math.random() < .5 ? -1 : 1); m.timer = 1 + Math.random() * 2; }
-        const speed = m.kind === "cow" ? 31.2 : m.kind === "sheep" ? 42 : m.kind === "zombie" ? 45 : 37.2;
+        const speed = m.kind === "cow" ? 31.2 : m.kind === "sheep" ? 42 : m.kind === "zombie" ? 36 : 37.2;
         const nextX = m.x + m.direction * speed * dt;
         const groundedProbe = world.blocksInRect(nextX, m.y + m.height, nextX + m.width, m.y + m.height + BLOCK_SIZE + 2);
         const hasGround = groundedProbe.some(b => b.y >= m.y + m.height - 3 && b.x < nextX + m.width && b.x + BLOCK_SIZE > nextX);
@@ -287,24 +275,7 @@
       }
     }
     save() { return { entities: this.entities.filter(m => m.alive).map(m => ({ ...m })), arrows: this.arrows.map(a => ({ ...a })), wasNight: this.wasNight }; }
-    load(data) {
-      const validKinds = new Set(["sheep", "cow", "zombie", "skeleton"]);
-      this.entities = Array.isArray(data?.entities)
-        ? data.entities.filter(m => m && validKinds.has(m.kind) && Number.isFinite(m.x) && Number.isFinite(m.y)).slice(0, 10).map(m => ({
-            ...m,
-            width: Number.isFinite(m.width) ? Math.max(20, Math.min(80, m.width)) : (m.kind === "cow" ? 62 : 42),
-            height: Number.isFinite(m.height) ? Math.max(20, Math.min(80, m.height)) : 56,
-            hp: Number.isFinite(m.hp) ? m.hp : 20,
-            maxHp: Number.isFinite(m.maxHp) ? m.maxHp : 20,
-            vx: Number.isFinite(m.vx) ? m.vx : 0,
-            vy: Number.isFinite(m.vy) ? m.vy : 0,
-            alive: true
-          })) : [];
-      this.arrows = Array.isArray(data?.arrows)
-        ? data.arrows.filter(a => Number.isFinite(a.x) && Number.isFinite(a.y)).slice(0, 24).map(a => ({ ...a, alive: true })) : [];
-      this.wasNight = !!data?.wasNight;
-      this.spawnTimer = 0;
-    }
+    load(data) { this.entities = Array.isArray(data?.entities) ? data.entities.filter(m => m && typeof m.kind === "string" && Number.isFinite(m.x) && Number.isFinite(m.y)).map(m => ({ ...m, alive: true })) : []; this.arrows = Array.isArray(data?.arrows) ? data.arrows.filter(a => Number.isFinite(a.x) && Number.isFinite(a.y)).map(a => ({ ...a, alive: true })) : []; this.wasNight = !!data?.wasNight; }
   }
 
   function furnaceState() { return { input: null, fuel: null, output: null, burnTime: 0, cookTime: 0, animationTime: 0 }; }

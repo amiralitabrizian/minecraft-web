@@ -861,121 +861,74 @@ body.needs-landscape #rotate-screen { display:flex; }
 .inventory-grid-scroll .inventory-slot { touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
 .inventory-grid-scroll .inventory-slot.drag-source { opacity: .5; outline: 2px dashed #7dd3fc; outline-offset: 1px; }
 
-/* v32: bottom-docked mobile hotbar + softer, clearer game interface. */
-:root {
-  --ui-glass: rgba(12, 23, 35, .88);
-  --ui-line: rgba(226, 240, 250, .28);
-  --ui-shadow: 0 7px 22px rgba(0, 0, 0, .28);
-}
-#game-shell {
-  background: linear-gradient(180deg, #79c9ed 0%, #b7e5ef 48%, #6c9b58 100%);
-}
-#quick-tools button,
-#clock-hud,
-#vitals-hud,
-#hotbar {
-  border-color: var(--ui-line);
-  background: var(--ui-glass);
-  box-shadow: var(--ui-shadow);
-  backdrop-filter: blur(7px);
-  -webkit-backdrop-filter: blur(7px);
-}
-#quick-tools button {
-  transition: transform .14s ease, background .14s ease, border-color .14s ease;
-}
-#quick-tools button:active { transform: scale(.94); background: rgba(65, 100, 126, .95); }
-#hotbar {
-  border: 1px solid rgba(235, 246, 255, .5);
-  border-radius: 11px;
-  padding: 5px;
-}
-.inventory-slot {
-  border-radius: 6px;
-  border-color: rgba(210, 225, 238, .62);
-  transition: border-color .12s ease, background .12s ease, transform .12s ease;
-}
-.inventory-slot:active { transform: scale(.96); }
-.inventory-slot.selected {
-  border: 3px solid #ffe27a;
-  box-shadow: 0 0 0 1px rgba(255, 236, 160, .55), 0 0 14px rgba(255, 218, 91, .42);
-}
-#inventory-panel:not([hidden]),
-.system-panel {
-  border: 1px solid rgba(221, 237, 248, .56);
-  background: linear-gradient(150deg, rgba(31, 48, 66, .98), rgba(12, 23, 37, .98));
-  box-shadow: 0 18px 55px rgba(0, 0, 0, .55);
-  backdrop-filter: blur(10px);
-}
-#inventory-panel .inventory-title,
-.system-panel-head { color: #f4f8fb; }
-#touch-controls button {
-  border: 1px solid rgba(240, 248, 255, .5);
-  background: rgba(17, 34, 49, .82);
-  color: #fff;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, .3);
-  backdrop-filter: blur(5px);
-  -webkit-backdrop-filter: blur(5px);
-}
-#touch-controls button:active { background: rgba(75, 125, 151, .96); }
 
-/* On phones: the 1–9 bar is always visible and sits directly on the bottom edge.
-   Movement and jump buttons move just above it so they do not cover the slots. */
-@media (pointer: coarse), (hover: none), (max-width: 700px) {
-  #hotbar {
-    left: 50%;
-    bottom: max(4px, env(safe-area-inset-bottom, 0px)) !important;
-    transform: translateX(-50%);
-    z-index: 42;
-    display: flex;
-    flex-wrap: nowrap;
-    gap: 2px;
-    padding: 4px;
-    max-width: calc(100vw - 10px);
-    border-radius: 9px;
-  }
-  #hotbar .inventory-slot {
-    flex: 0 1 clamp(25px, 7.5vw, 36px);
-    width: clamp(25px, 7.5vw, 36px);
-    min-width: 0;
-    height: clamp(29px, 8vw, 37px);
-  }
-  #touch-controls {
-    bottom: calc(46px + env(safe-area-inset-bottom, 0px)) !important;
-    height: 42px;
-    z-index: 41;
-  }
-  #touch-controls .move-controls,
-  #touch-controls .action-controls { bottom: 0; }
-  #touch-controls button {
-    width: 39px;
-    min-width: 39px;
-    height: 40px;
-    min-height: 40px;
-    border-radius: 10px;
-  }
-  #inventory-panel:not([hidden]) {
-    max-height: calc(100dvh - 88px);
-  }
+/* v35 — private player feedback form on the main menu. */
+.feedback-toggle {
+  width:100%; min-height:38px; padding:8px 13px; border:1px solid rgba(143,225,107,.48);
+  border-radius:9px; background:linear-gradient(135deg,rgba(48,105,67,.92),rgba(34,75,57,.94));
+  color:#f3fff0; font:700 12px Tahoma,Arial,sans-serif; cursor:pointer;
+  box-shadow:0 3px 0 rgba(15,43,31,.8); transition:filter .15s,transform .15s;
+}
+.feedback-toggle:hover { filter:brightness(1.12); transform:translateY(-1px); }
+.feedback-panel {
+  width:100%; padding:13px; border:1px solid rgba(143,225,107,.28); border-radius:12px;
+  background:linear-gradient(155deg,rgba(8,22,31,.9),rgba(13,30,39,.92)); text-align:right;
+  box-shadow:inset 0 1px rgba(255,255,255,.04);
+}
+.feedback-panel[hidden] { display:none !important; }
+.feedback-heading { display:grid; gap:4px; margin-bottom:11px; text-align:center; }
+.feedback-heading strong { color:#b9f09d; font-size:14px; }
+.feedback-heading span { color:#b8cad5; font-size:10px; line-height:1.7; }
+.feedback-form { display:grid; gap:7px; direction:rtl; }
+.feedback-form label { color:#e2edf3; font:700 11px Tahoma,Arial,sans-serif; }
+.feedback-form label small { color:#91a8b9; font-weight:400; }
+.feedback-form input:not(.feedback-honeypot),
+.feedback-form select,
+.feedback-form textarea {
+  width:100%; min-width:0; min-height:36px; padding:8px 10px; border:1px solid rgba(184,207,222,.25);
+  border-radius:8px; outline:none; background:rgba(5,14,24,.72); color:#f4f8fb;
+  font:12px Tahoma,Arial,sans-serif; text-align:right;
+}
+.feedback-form textarea { min-height:88px; resize:vertical; line-height:1.7; }
+.feedback-form input:focus,
+.feedback-form select:focus,
+.feedback-form textarea:focus { border-color:#8fe16b; box-shadow:0 0 0 2px rgba(143,225,107,.12); }
+.feedback-form select option { background:#142538; color:#fff; }
+.feedback-form button { min-height:39px; margin-top:3px; border:1px solid rgba(205,241,190,.3); border-radius:8px; background:linear-gradient(#4c9b4e,#2e713d); color:white; font:700 12px Tahoma,Arial,sans-serif; cursor:pointer; }
+.feedback-form button:disabled { opacity:.58; cursor:wait; }
+.feedback-status { min-height:18px; margin:0; color:#b8cbd5; font-size:10px; line-height:1.7; text-align:center; }
+.feedback-status.is-success { color:#a9ef9e; }
+.feedback-status.is-error { color:#ffb4a9; }
+.feedback-honeypot { position:absolute !important; width:1px !important; height:1px !important; padding:0 !important; margin:-1px !important; overflow:hidden !important; clip:rect(0,0,0,0) !important; white-space:nowrap !important; border:0 !important; }
+@media (pointer:coarse), (hover:none), (max-width:700px) {
+  .feedback-toggle { min-height:36px; font-size:11px; }
+  .feedback-panel { padding:10px; }
+  .feedback-form { gap:6px; }
+  .feedback-form input:not(.feedback-honeypot), .feedback-form select { min-height:34px; }
+  .feedback-form textarea { min-height:74px; }
+}
+@media (orientation:landscape) and (max-height:430px) {
+  .feedback-panel { padding:8px; }
+  .feedback-form textarea { min-height:55px; }
 }
 
-@media (orientation: landscape) and (max-height: 430px) {
+
+/* v36 — pin the 1–9 hotbar to the bottom edge on touch screens. */
+@media (pointer:coarse), (hover:none), (max-width:700px) {
   #hotbar {
-    bottom: max(3px, env(safe-area-inset-bottom, 0px)) !important;
-  }
-  #hotbar .inventory-slot {
-    flex-basis: clamp(23px, 4.1vw, 30px);
-    width: clamp(23px, 4.1vw, 30px);
-    height: 29px;
+    position:absolute !important;
+    left:50% !important;
+    bottom:max(2px, env(safe-area-inset-bottom, 0px)) !important;
+    transform:translateX(-50%) !important;
+    z-index:40 !important;
+    margin:0 !important;
   }
   #touch-controls {
-    bottom: calc(38px + env(safe-area-inset-bottom, 0px)) !important;
-    height: 35px;
+    bottom:calc(52px + env(safe-area-inset-bottom, 0px)) !important;
+    z-index:35 !important;
   }
-  #touch-controls button {
-    width: 33px;
-    min-width: 33px;
-    height: 34px;
-    min-height: 34px;
-    font-size: 16px;
-  }
+}
+@media (orientation:landscape) and (max-height:430px) {
+  #hotbar { bottom:max(2px, env(safe-area-inset-bottom, 0px)) !important; }
+  #touch-controls { bottom:calc(43px + env(safe-area-inset-bottom, 0px)) !important; }
 }

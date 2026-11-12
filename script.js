@@ -248,8 +248,7 @@
   function resizeCanvas() {
     const rect = gameShell.getBoundingClientRect();
     const touchLike = navigator.maxTouchPoints > 0 || matchMedia("(pointer: coarse)").matches;
-    // A lighter mobile canvas backing store reduces fill and drawing cost.
-    dpr = Math.max(1, Math.min(window.devicePixelRatio || 1, touchLike ? 1.25 : 2));
+    dpr = Math.max(1, Math.min(window.devicePixelRatio || 1, touchLike ? 1.5 : 2));
     canvas.width = Math.max(1, Math.round(rect.width * dpr));
     canvas.height = Math.max(1, Math.round(rect.height * dpr));
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -992,7 +991,7 @@
   function updateSurvival(dt) {
     if (!player.alive) return;
     player.hungerTimer += dt;
-    if (player.hungerTimer >= 30) { player.hunger = Math.max(0, player.hunger - 1); player.hungerTimer %= 30; }
+    if (player.hungerTimer >= 60) { player.hunger = Math.max(0, player.hunger - 1); player.hungerTimer %= 60; }
     if (player.hunger >= 18 && player.health < player.maxHealth) {
       player.regenTimer += dt;
       if (player.regenTimer >= 4) { player.health = Math.min(player.maxHealth, player.health + 1); player.hunger = Math.max(0, player.hunger - 1); player.regenTimer = 0; }
@@ -1761,13 +1760,12 @@
   window.addEventListener("orientationchange", () => requestAnimationFrame(() => { updateDeviceMode(); resizeCanvas(); }));
   if (screen.orientation && screen.orientation.addEventListener) screen.orientation.addEventListener("change", () => requestAnimationFrame(() => { updateDeviceMode(); resizeCanvas(); }));
 
-  // Check/load the saved world before generating a fresh one. Previously the
-  // default terrain was generated first and immediately discarded by Load.
+  // Spawn directly above the generated surface, matching the original game's terrain start.
   player.y = surfaceY(player.x) - player.height;
   player.onGround = false;
+  world.generateAround(player.x);
   renderInventory();
   const resumed = loadGame(false);
-  if (!resumed) world.generateAround(player.x);
   if (mainMenuPanel) mainMenuPanel.hidden = false;
   refreshMenuButtons();
   Sound.updateButton();
