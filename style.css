@@ -932,3 +932,21 @@ body.needs-landscape #rotate-screen { display:flex; }
   #hotbar { bottom:max(2px, env(safe-area-inset-bottom, 0px)) !important; }
   #touch-controls { bottom:calc(43px + env(safe-area-inset-bottom, 0px)) !important; }
 }
+
+
+/* v37 — keep the hotbar in the lower-left corner on touch screens,
+   leaving the central bottom world area visible. */
+@media (pointer:coarse), (hover:none), (max-width:700px) {
+  #hotbar {
+    left:max(6px, env(safe-area-inset-left, 0px)) !important;
+    right:auto !important;
+    bottom:max(2px, env(safe-area-inset-bottom, 0px)) !important;
+    transform:none !important;
+  }
+}
+@media (orientation:landscape) and (max-height:430px) {
+  #hotbar {
+    left:max(4px, env(safe-area-inset-left, 0px)) !important;
+    bottom:max(2px, env(safe-area-inset-bottom, 0px)) !important;
+  }
+}

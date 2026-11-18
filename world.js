@@ -1,4 +1,4 @@
- "use strict";
+ "use strict"
 
 /* Stage 1: deterministic chunk terrain and block interaction primitives. */
 (function () {

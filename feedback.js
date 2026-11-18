@@ -4,7 +4,7 @@
 (() => {
   "use strict";
 
-  const FORMSPREE_ENDPOINT = "https://formspree.io/f/REPLACE_WITH_YOUR_FORM_ID";
+  const FORMSPREE_ENDPOINT = "https://formspree.io/f/mrpqblge";
   const toggle = document.getElementById("feedback-toggle");
   const panel = document.getElementById("feedback-panel");
   const form = document.getElementById("feedback-form");
