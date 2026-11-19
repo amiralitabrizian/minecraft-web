@@ -2,8 +2,7 @@
 
 (() => {
   const canvas = document.getElementById("game-canvas");
-  const ctx = canvas.getContext("2d", { alpha: false, desynchronized: true });
-  const lowGraphicsMode = navigator.maxTouchPoints > 0 || matchMedia("(pointer: coarse)").matches || matchMedia("(max-width: 700px)").matches;
+  const ctx = canvas.getContext("2d");
   const gameShell = document.getElementById("game-shell");
   const statusText = document.getElementById("debug-status");
   const rotateScreen = document.getElementById("rotate-screen");
@@ -375,7 +374,7 @@
   }
 
   function screenToWorld(event) {
-    const rect = gameShell.getBoundingClientRect();
+    const rect = canvas.getBoundingClientRect();
     return { x: event.clientX - rect.left + camera.x, y: event.clientY - rect.top + camera.y };
   }
 
@@ -997,10 +996,8 @@
       player.regenTimer += dt;
       if (player.regenTimer >= 4) { player.health = Math.min(player.maxHealth, player.health + 1); player.hunger = Math.max(0, player.hunger - 1); player.regenTimer = 0; }
     } else player.regenTimer = 0;
-    if (player.hunger <= 0) {
-      player.starvationTimer += dt;
-      while (player.starvationTimer >= 2 && player.alive) { player.starvationTimer -= 2; damagePlayer(1, "گرسنگی"); }
-    } else player.starvationTimer = 0;
+    if (player.hunger <= 0) { player.starvationTimer += dt; if (player.starvationTimer >= 2) { player.starvationTimer = 0; damagePlayer(1, "Starvation"); } }
+    else player.starvationTimer = 0;
     player.damageTimer = Math.max(0, player.damageTimer - dt); renderHud();
   }
   function eatSelectedFood() {
@@ -1222,7 +1219,7 @@
     // Warm two-layer torch pools: a broad amber halo and a brighter local core.
     // Only visible torches are processed, with a small cap for low-end phones.
     ctx.globalCompositeOperation = "screen";
-    const visibleTorches = visibleBlocksForLighting.filter(b => b.type === "torch").slice(0, lowGraphicsMode ? 4 : 10);
+    const visibleTorches = visibleBlocksForLighting.filter(b => b.type === "torch").slice(0, 10);
     const lights = visibleTorches.map(b => ({
       x: b.x + BLOCK_SIZE / 2 - camera.x,
       y: b.y + 10 - camera.y,
@@ -1323,8 +1320,7 @@
     let seed = seedBase || 1;
     const rand = () => { seed ^= seed << 13; seed ^= seed >>> 17; seed ^= seed << 5; return (seed >>> 0) / 4294967296; };
     const specks = (count, palette, minSize = 2, maxSize = 5) => {
-      const drawCount = lowGraphicsMode ? Math.ceil(count * 0.4) : count;
-      for (let i = 0; i < drawCount; i++) {
+      for (let i = 0; i < count; i++) {
         const px = x + 3 + Math.floor(rand() * 33), py = y + 3 + Math.floor(rand() * 33);
         const size = minSize + Math.floor(rand() * (maxSize - minSize + 1));
         ctx.fillStyle = palette[Math.floor(rand() * palette.length)];
@@ -1621,7 +1617,7 @@
     if (!document.body.classList.contains("needs-landscape")) update(dt);
     const touchLike = navigator.maxTouchPoints > 0 || matchMedia("(pointer: coarse)").matches;
     const menuOpen = mainMenuPanel && !mainMenuPanel.hidden;
-    const renderInterval = menuOpen ? 1000 / 15 : touchLike ? 1000 / 30 : 1000 / 50;
+    const renderInterval = menuOpen ? 1000 / 18 : touchLike ? 1000 / 40 : 1000 / 60;
     if (timestamp - lastRenderTime >= renderInterval) {
       render();
       lastRenderTime = timestamp;
