@@ -2,7 +2,8 @@
 
 (() => {
   const canvas = document.getElementById("game-canvas");
-  const ctx = canvas.getContext("2d");
+  const ctx = canvas.getContext("2d", { alpha: false, desynchronized: true });
+  const lowGraphicsMode = navigator.maxTouchPoints > 0 || matchMedia("(pointer: coarse)").matches || matchMedia("(max-width: 700px)").matches;
   const gameShell = document.getElementById("game-shell");
   const statusText = document.getElementById("debug-status");
   const rotateScreen = document.getElementById("rotate-screen");
@@ -246,7 +247,7 @@
   }
 
   function resizeCanvas() {
-    const rect = gameShell.getBoundingClientRect();
+    const rect = canvas.getBoundingClientRect();
     const touchLike = navigator.maxTouchPoints > 0 || matchMedia("(pointer: coarse)").matches;
     dpr = Math.max(1, Math.min(window.devicePixelRatio || 1, touchLike ? 1.5 : 2));
     canvas.width = Math.max(1, Math.round(rect.width * dpr));
@@ -261,8 +262,7 @@
     const touchDevice = navigator.maxTouchPoints > 0 || "ontouchstart" in window ||
       matchMedia("(pointer: coarse)").matches || matchMedia("(hover: none)").matches;
     document.body.classList.toggle("touch-device", touchDevice);
-    const portrait = matchMedia("(orientation: portrait)").matches || innerHeight > innerWidth;
-    const needsLandscape = touchDevice && portrait;
+    const needsLandscape = false; // Portrait gameplay is allowed; no orientation gate.
     document.body.classList.toggle("needs-landscape", needsLandscape);
     if (needsLandscape) {
       setStatus("برای شروع گوشی را افقی کنید");
@@ -288,7 +288,7 @@
   }
 
   function keepPlayerInWorld() {
-    const viewWidth = gameShell.clientWidth;
+    const viewWidth = canvas.clientWidth;
     // Keep the player in the visible camera area, while the camera can follow along the world.
     if (!Number.isFinite(player.x)) player.x = 80;
     player.x = Math.max(-BLOCK_SIZE * 100000, Math.min(player.x, BLOCK_SIZE * 100000));
@@ -296,8 +296,8 @@
   }
 
   function updateCamera(snap = false, dt = 1 / 60) {
-    const w = gameShell.clientWidth;
-    const h = gameShell.clientHeight;
+    const w = canvas.clientWidth;
+    const h = canvas.clientHeight;
     // Follow the player near screen center, with smoothing like the original Camera class.
     const targetX = player.x + player.width / 2 - w * 0.5;
     const targetY = player.y + player.height / 2 - h * 0.5;
@@ -996,8 +996,10 @@
       player.regenTimer += dt;
       if (player.regenTimer >= 4) { player.health = Math.min(player.maxHealth, player.health + 1); player.hunger = Math.max(0, player.hunger - 1); player.regenTimer = 0; }
     } else player.regenTimer = 0;
-    if (player.hunger <= 0) { player.starvationTimer += dt; if (player.starvationTimer >= 2) { player.starvationTimer = 0; damagePlayer(1, "Starvation"); } }
-    else player.starvationTimer = 0;
+    if (player.hunger <= 0) {
+      player.starvationTimer += dt;
+      while (player.starvationTimer >= 2 && player.alive) { player.starvationTimer -= 2; damagePlayer(1, "گرسنگی"); }
+    } else player.starvationTimer = 0;
     player.damageTimer = Math.max(0, player.damageTimer - dt); renderHud();
   }
   function eatSelectedFood() {
@@ -1219,7 +1221,7 @@
     // Warm two-layer torch pools: a broad amber halo and a brighter local core.
     // Only visible torches are processed, with a small cap for low-end phones.
     ctx.globalCompositeOperation = "screen";
-    const visibleTorches = visibleBlocksForLighting.filter(b => b.type === "torch").slice(0, 10);
+    const visibleTorches = visibleBlocksForLighting.filter(b => b.type === "torch").slice(0, lowGraphicsMode ? 4 : 10);
     const lights = visibleTorches.map(b => ({
       x: b.x + BLOCK_SIZE / 2 - camera.x,
       y: b.y + 10 - camera.y,
@@ -1320,7 +1322,8 @@
     let seed = seedBase || 1;
     const rand = () => { seed ^= seed << 13; seed ^= seed >>> 17; seed ^= seed << 5; return (seed >>> 0) / 4294967296; };
     const specks = (count, palette, minSize = 2, maxSize = 5) => {
-      for (let i = 0; i < count; i++) {
+      const drawCount = lowGraphicsMode ? Math.ceil(count * 0.4) : count;
+      for (let i = 0; i < drawCount; i++) {
         const px = x + 3 + Math.floor(rand() * 33), py = y + 3 + Math.floor(rand() * 33);
         const size = minSize + Math.floor(rand() * (maxSize - minSize + 1));
         ctx.fillStyle = palette[Math.floor(rand() * palette.length)];
@@ -1451,8 +1454,8 @@
   }
 
   function render() {
-    const width = gameShell.clientWidth;
-    const height = gameShell.clientHeight;
+    const width = canvas.clientWidth;
+    const height = canvas.clientHeight;
     const minutes = clock.minutes;
     const mix = (a, b, t) => a.map((v, i) => Math.round(v + (b[i] - v) * Math.max(0, Math.min(1, t))));
     const keyframes = [
@@ -1617,7 +1620,7 @@
     if (!document.body.classList.contains("needs-landscape")) update(dt);
     const touchLike = navigator.maxTouchPoints > 0 || matchMedia("(pointer: coarse)").matches;
     const menuOpen = mainMenuPanel && !mainMenuPanel.hidden;
-    const renderInterval = menuOpen ? 1000 / 18 : touchLike ? 1000 / 40 : 1000 / 60;
+    const renderInterval = menuOpen ? 1000 / 15 : touchLike ? 1000 / 30 : 1000 / 50;
     if (timestamp - lastRenderTime >= renderInterval) {
       render();
       lastRenderTime = timestamp;

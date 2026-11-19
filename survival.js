@@ -91,8 +91,8 @@
           if (rectsOverlap(rect, { x: b.x, y: b.y, width: BLOCK_SIZE, height: BLOCK_SIZE })) { blocked = true; break; }
         }
         if (blocked) continue;
-        this.entities.push({ kind, x, y, width, height, hp: kind === "sheep" ? 20 : kind === "cow" ? 25 : kind === "zombie" ? 14 : 24,
-          maxHp: kind === "sheep" ? 20 : kind === "cow" ? 25 : kind === "zombie" ? 14 : 24,
+        this.entities.push({ kind, x, y, width, height, hp: kind === "sheep" ? 20 : kind === "cow" ? 25 : kind === "zombie" ? 20 : 24,
+          maxHp: kind === "sheep" ? 20 : kind === "cow" ? 25 : kind === "zombie" ? 20 : 24,
           vx: 0, vy: 0, direction: Math.random() < .5 ? -1 : 1, timer: .8 + Math.random() * 2,
           cooldown: .5 + Math.random(), walk: Math.random() * 6, alive: true, burning: false, burnTimer: 0, flash: 0 });
         return true;
@@ -126,7 +126,7 @@
           m.burning = !night && !roof;
           if (m.burning) { m.burnTimer += dt; if (m.burnTimer >= .45) { m.hp -= 4; m.burnTimer = 0; m.flash = .1; } } else m.burnTimer = 0;
           if (m.kind === "zombie") {
-            if (distance <= 48 && m.cooldown <= 0) { onPlayerDamage(1); m.cooldown = 1.8; }
+            if (distance <= 48 && m.cooldown <= 0) { onPlayerDamage(2); m.cooldown = 1.2; }
             if (distance <= 260) m.direction = dx >= 0 ? 1 : -1;
             else if (m.timer <= 0) { m.direction = Math.random() < .45 ? 0 : (Math.random() < .5 ? -1 : 1); m.timer = .8 + Math.random() * 2; }
           } else {
@@ -137,7 +137,7 @@
             } else if (distance > 360 && m.timer <= 0) { m.direction = Math.random() < .4 ? 0 : (Math.random() < .5 ? -1 : 1); m.timer = 1 + Math.random() * 1.5; }
           }
         } else if (m.timer <= 0) { m.direction = Math.random() < .5 ? 0 : (Math.random() < .5 ? -1 : 1); m.timer = 1 + Math.random() * 2; }
-        const speed = m.kind === "cow" ? 31.2 : m.kind === "sheep" ? 42 : m.kind === "zombie" ? 24 : 37.2;
+        const speed = m.kind === "cow" ? 31.2 : m.kind === "sheep" ? 42 : m.kind === "zombie" ? 36 : 37.2;
         const nextX = m.x + m.direction * speed * dt;
         const groundedProbe = world.blocksInRect(nextX, m.y + m.height, nextX + m.width, m.y + m.height + BLOCK_SIZE + 2);
         const hasGround = groundedProbe.some(b => b.y >= m.y + m.height - 3 && b.x < nextX + m.width && b.x + BLOCK_SIZE > nextX);

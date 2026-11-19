@@ -1,120 +1,74 @@
-
-"use strict";
-
+/* Minecraft2D Web — private feedback form.
+ * Configure FORMSPREE_ENDPOINT with your Formspree form endpoint after creating it.
+ */
 (() => {
-  const ENDPOINT = "https://formspree.io/f/mrpqblge";
+  "use strict";
 
+  const FORMSPREE_ENDPOINT = "https://formspree.io/f/REPLACE_WITH_YOUR_FORM_ID";
   const toggle = document.getElementById("feedback-toggle");
   const panel = document.getElementById("feedback-panel");
   const form = document.getElementById("feedback-form");
   const submit = document.getElementById("feedback-submit");
   const status = document.getElementById("feedback-status");
-
   if (!toggle || !panel || !form || !submit || !status) return;
 
-  function setStatus(message, type = "") {
+  const setStatus = (message, type = "") => {
     status.textContent = message;
     status.classList.remove("is-success", "is-error");
-
     if (type) status.classList.add(type);
-  }
+  };
 
   toggle.addEventListener("click", () => {
     const opening = panel.hidden;
-
     panel.hidden = !opening;
     toggle.setAttribute("aria-expanded", String(opening));
-
     if (opening) {
-      form.querySelector('[name="name"]')
-        ?.focus({ preventScroll: true });
+      const firstField = form.querySelector("input[name='name']");
+      if (firstField) firstField.focus({ preventScroll: true });
     }
   });
 
-  form.addEventListener("submit", async event => {
+  form.addEventListener("submit", async (event) => {
     event.preventDefault();
-
     if (!form.reportValidity()) return;
 
     const data = new FormData(form);
-
-    if (String(data.get("website") || "").trim()) return;
-
+    if (String(data.get("website") || "").trim()) { setStatus("ارسال پیام انجام نشد.", "is-error"); return; }
     const message = String(data.get("message") || "").trim();
-
     if (message.length < 3) {
       setStatus("لطفاً پیام کامل‌تری بنویس.", "is-error");
       return;
     }
-
     data.set("message", message);
-    data.set(
-      "_subject",
-      "پیام جدید Minecraft2D Web"
-    );
-    data.set("source", "Minecraft2D Web");
+    data.set("_subject", "پیام جدید Minecraft2D Web — " + String(data.get("topic") || "نظر"));
+    data.set("source", "Minecraft2D Web main menu");
+
+    if (FORMSPREE_ENDPOINT.includes("REPLACE_WITH_YOUR_FORM_ID")) {
+      setStatus("ارسال هنوز فعال نیست؛ اتصال Formspree برای دریافت واقعی پیام‌ها باید توسط سازنده تنظیم شود. پیام ارسال نشد.", "is-error");
+      return;
+    }
 
     submit.disabled = true;
     submit.textContent = "در حال ارسال...";
-
-    setStatus("در حال اتصال به سرور ارسال پیام...");
-
+    setStatus("در حال ارسال پیام...");
     try {
-      const response = await fetch(ENDPOINT, {
+      const response = await fetch(FORMSPREE_ENDPOINT, {
         method: "POST",
         body: data,
-        headers: {
-          Accept: "application/json"
-        },
-        mode: "cors",
-        credentials: "omit"
+        headers: { Accept: "application/json" }
       });
-
-      const result = await response.json().catch(() => ({}));
-
       if (!response.ok) {
-        const details = Array.isArray(result.errors)
-          ? result.errors.map(item => item.message).join(" ")
-          : "";
-
-        if (response.status === 404) {
-          throw new Error("فرم Formspree پیدا نشد. شناسه فرم را بررسی کن.");
-        }
-
-        if (response.status === 422) {
-          throw new Error(details || "اطلاعات فرم مورد قبول نیست.");
-        }
-
-        if (response.status === 429) {
-          throw new Error("تعداد درخواست‌ها زیاد است. کمی بعد تلاش کن.");
-        }
-
-        throw new Error(
-          details || `خطای سرور Formspree: ${response.status}`
-        );
+        let detail = "";
+        try {
+          const result = await response.json();
+          detail = Array.isArray(result.errors) ? result.errors.map(item => item.message).join(" ") : "";
+        } catch (_) {}
+        throw new Error(detail || "ارسال پیام موفق نبود. دوباره تلاش کن.");
       }
-
-      if (result.ok === false) {
-        throw new Error("سرور ارسال پیام، درخواست را تأیید نکرد.");
-      }
-
       form.reset();
-
-      setStatus(
-        "پیامت با موفقیت ارسال شد. ممنون از نظرت!",
-        "is-success"
-      );
-
+      setStatus("پیامت با موفقیت ارسال شد. ممنون از نظرت!", "is-success");
     } catch (error) {
-      console.error("[FEEDBACK ERROR]", error);
-
-      setStatus(
-        error instanceof TypeError
-          ? "ارتباط با سرور برقرار نشد. اینترنت، فیلترشکن و دسترسی Formspree را بررسی کن."
-          : error.message,
-        "is-error"
-      );
-
+      setStatus(error.message || "خطا در ارسال پیام. اتصال اینترنت را بررسی کن.", "is-error");
     } finally {
       submit.disabled = false;
       submit.textContent = "ارسال پیام";

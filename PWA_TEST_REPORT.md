@@ -224,3 +224,11 @@
 
   window.MinecraftWorld = { World, BLOCK_SIZE, CHUNK_SIZE, COLORS, SOLID_TYPES, ALLOWED_TYPES, rectanglesOverlap, surfaceY };
 })();
+
+
+## v37 fixes (2026-11-19)
+- Portrait mode is permitted (orientation gate removed).
+- Missing sound/icon cache entries no longer block Service Worker installation.
+- Added a lightweight SVG app icon and updated manifest.
+- Mobile hotbar uses a dedicated bottom strip; canvas viewport is reduced.
+- Rendering capped at 30 FPS on touch devices.
