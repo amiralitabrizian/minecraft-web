@@ -1,8 +1,8 @@
 "use strict";
-const CACHE_NAME = "minecraft-web-v37";
-const CORE_FILES = ["./", "./index.html", "./style.css", "./feedback.js", "./world.js", "./script.js", "./survival.js", "./manifest.json", "./icon.svg", "./icon-192.png", "./icon-512.png"];
+const CACHE_NAME = "minecraft-web-v36";
+const FILES_TO_CACHE = ["./", "./index.html", "./style.css", "./feedback.js", "./world.js", "./script.js", "./survival.js", "./manifest.json", "./icons/icon-192.png", "./icons/icon-512.png", "./icons/icon-maskable-512.png", "./sounds/food.mp3", "./sounds/sheep-hit.mp3", "./sounds/cow-hit.mp3", "./sounds/zombie.mp3", "./sounds/background_music.mp3"];
 self.addEventListener("install", event => {
-  event.waitUntil(caches.open(CACHE_NAME).then(cache => Promise.all(CORE_FILES.map(url => cache.add(url).catch(err => console.warn("Optional cache failed:", url, err))))));
+  event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(FILES_TO_CACHE)));
   self.skipWaiting();
 });
 self.addEventListener("activate", event => {

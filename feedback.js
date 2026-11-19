@@ -33,7 +33,7 @@
     if (!form.reportValidity()) return;
 
     const data = new FormData(form);
-    if (String(data.get("website") || "").trim()) { setStatus("ارسال پیام انجام نشد.", "is-error"); return; }
+    if (String(data.get("website") || "").trim()) return;
     const message = String(data.get("message") || "").trim();
     if (message.length < 3) {
       setStatus("لطفاً پیام کامل‌تری بنویس.", "is-error");
@@ -44,7 +44,7 @@
     data.set("source", "Minecraft2D Web main menu");
 
     if (FORMSPREE_ENDPOINT.includes("REPLACE_WITH_YOUR_FORM_ID")) {
-      setStatus("ارسال هنوز فعال نیست؛ اتصال Formspree برای دریافت واقعی پیام‌ها باید توسط سازنده تنظیم شود. پیام ارسال نشد.", "is-error");
+      setStatus("فرم آماده است؛ برای فعال شدن ارسال ایمیل، باید لینک اختصاصی Formspree را در تنظیمات این فایل قرار دهیم.", "is-error");
       return;
     }
 
