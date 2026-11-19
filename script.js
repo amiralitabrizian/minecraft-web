@@ -247,7 +247,7 @@
   }
 
   function resizeCanvas() {
-    const rect = canvas.getBoundingClientRect();
+    const rect = gameShell.getBoundingClientRect();
     const touchLike = navigator.maxTouchPoints > 0 || matchMedia("(pointer: coarse)").matches;
     dpr = Math.max(1, Math.min(window.devicePixelRatio || 1, touchLike ? 1.5 : 2));
     canvas.width = Math.max(1, Math.round(rect.width * dpr));
@@ -262,7 +262,8 @@
     const touchDevice = navigator.maxTouchPoints > 0 || "ontouchstart" in window ||
       matchMedia("(pointer: coarse)").matches || matchMedia("(hover: none)").matches;
     document.body.classList.toggle("touch-device", touchDevice);
-    const needsLandscape = false; // Portrait gameplay is allowed; no orientation gate.
+    const portrait = matchMedia("(orientation: portrait)").matches || innerHeight > innerWidth;
+    const needsLandscape = touchDevice && portrait;
     document.body.classList.toggle("needs-landscape", needsLandscape);
     if (needsLandscape) {
       setStatus("برای شروع گوشی را افقی کنید");
@@ -288,7 +289,7 @@
   }
 
   function keepPlayerInWorld() {
-    const viewWidth = canvas.clientWidth;
+    const viewWidth = gameShell.clientWidth;
     // Keep the player in the visible camera area, while the camera can follow along the world.
     if (!Number.isFinite(player.x)) player.x = 80;
     player.x = Math.max(-BLOCK_SIZE * 100000, Math.min(player.x, BLOCK_SIZE * 100000));
@@ -296,8 +297,8 @@
   }
 
   function updateCamera(snap = false, dt = 1 / 60) {
-    const w = canvas.clientWidth;
-    const h = canvas.clientHeight;
+    const w = gameShell.clientWidth;
+    const h = gameShell.clientHeight;
     // Follow the player near screen center, with smoothing like the original Camera class.
     const targetX = player.x + player.width / 2 - w * 0.5;
     const targetY = player.y + player.height / 2 - h * 0.5;
@@ -374,7 +375,7 @@
   }
 
   function screenToWorld(event) {
-    const rect = canvas.getBoundingClientRect();
+    const rect = gameShell.getBoundingClientRect();
     return { x: event.clientX - rect.left + camera.x, y: event.clientY - rect.top + camera.y };
   }
 
@@ -1454,8 +1455,8 @@
   }
 
   function render() {
-    const width = canvas.clientWidth;
-    const height = canvas.clientHeight;
+    const width = gameShell.clientWidth;
+    const height = gameShell.clientHeight;
     const minutes = clock.minutes;
     const mix = (a, b, t) => a.map((v, i) => Math.round(v + (b[i] - v) * Math.max(0, Math.min(1, t))));
     const keyframes = [
